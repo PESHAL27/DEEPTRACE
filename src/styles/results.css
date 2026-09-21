@@ -1,0 +1,644 @@
+/* ===================================================
+   ANALYSIS RESULTS PAGE STYLES (Screenshot 2 Match)
+   =================================================== */
+
+.results-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 24px;
+}
+
+/* Results Header */
+.results-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 14px;
+}
+
+.back-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 6px;
+  transition: color 0.15s ease;
+}
+
+.back-link-btn:hover {
+  color: var(--text-primary);
+}
+
+.results-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.results-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+}
+
+.results-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.results-file-name {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.results-timestamp {
+  font-family: var(--font-mono);
+}
+
+/* Top Row Grid: Media Preview + Suspicious Frames + Verdict Card */
+.results-top-grid {
+  display: grid;
+  grid-template-columns: 1.45fr 0.65fr 0.9fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* 1. Media Preview Area */
+.media-preview-card {
+  background-color: #060911;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 310px;
+}
+
+.media-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #03060c;
+  overflow: hidden;
+}
+
+.media-main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Face Bounding Box HUD Overlay */
+.face-bounding-box {
+  position: absolute;
+  top: 21%;
+  left: 31%;
+  width: 32%;
+  height: 46%;
+  border: 1.5px solid #ef4444;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.bounding-box-corner-marker {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+}
+
+.face-detected-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(-100%);
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 2px 2px 0 0;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Custom Video Player Controls Bar */
+.media-controls-bar {
+  background: linear-gradient(180deg, rgba(8, 12, 20, 0.85) 0%, rgba(5, 8, 14, 0.98) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 15;
+}
+
+.control-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  transition: color 0.15s ease;
+}
+
+.control-btn:hover {
+  color: #ffffff;
+}
+
+.time-display {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.scrubber-track {
+  flex: 1;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+
+.scrubber-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background-color: #38bdf8;
+  border-radius: 2px;
+}
+
+.scrubber-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 2. Suspicious Frames Panel */
+.suspicious-frames-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.suspicious-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.suspicious-count {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.frames-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: 270px;
+  padding-right: 4px;
+}
+
+.frame-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 4px 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.frame-item:hover {
+  border-color: var(--border-highlight);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.frame-item.frame-active {
+  border: 1px solid #ef4444;
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.frame-thumb-box {
+  width: 48px;
+  height: 34px;
+  border-radius: 2px;
+  overflow: hidden;
+  background-color: #03060c;
+  flex-shrink: 0;
+}
+
+.frame-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.frame-timestamp-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.frame-item.frame-active .frame-timestamp-badge {
+  color: #f87171;
+}
+
+/* 3. Verdict Card */
+.verdict-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.verdict-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.verdict-status-title-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.verdict-alert-icon {
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.verdict-state-text {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #ef4444;
+}
+
+.verdict-state-text.is-real {
+  color: #10b981;
+}
+
+.confidence-section {
+  margin: 14px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confidence-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.confidence-score-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  letter-spacing: -0.5px;
+}
+
+.confidence-progress-track {
+  width: 100%;
+  height: 7px;
+  background-color: rgba(255, 255, 255, 0.07);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.confidence-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ef4444 0%, #f43f5e 100%);
+}
+
+.confidence-progress-bar.is-real {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+.verdict-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+}
+
+.verdict-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+}
+
+.verdict-meta-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.verdict-meta-val {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+/* Middle Row: Forensic Analysis + Evidence Visualization */
+.results-middle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.indicator-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.indicator-row:hover {
+  background-color: rgba(255, 255, 255, 0.025);
+  border-color: var(--border-highlight);
+}
+
+.indicator-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.indicator-icon-box {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.indicator-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.indicator-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.indicator-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.indicator-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Evidence Visualization Side-by-Side */
+.evidence-side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.evidence-frame-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evidence-img-wrapper {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background-color: #03060c;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.evidence-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.evidence-img-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Bottom Timeline Section */
+.timeline-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.timeline-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.timeline-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-graph-container {
+  position: relative;
+  height: 56px;
+  background-color: #050810;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: flex-end;
+  padding: 0 4px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.timeline-bars-track {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+}
+
+.timeline-bar-col {
+  flex: 1;
+  background-color: #1e293b;
+  min-height: 6px;
+  border-radius: 1px;
+  transition: all 0.15s ease;
+}
+
+.timeline-bar-col.is-suspicious {
+  background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%);
+}
+
+.timeline-region-tag {
+  position: absolute;
+  top: 6px;
+  left: 42%;
+  background-color: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 5;
+}
+
+.timeline-ticks-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  padding: 0 2px;
+}
+
+/* Action Buttons Bottom Bar */
+.results-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .results-top-grid {
+    grid-template-columns: 1fr;
+  }
+  .results-middle-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Stage 8G: Print Styling for Forensic Reports */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .modal-dialog {
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .modal-header .control-btn,
+  .modal-footer,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  .card {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    break-inside: avoid;
+  }
+
+  .mono-text, .cell-mono {
+    color: #0f172a !important;
+  }
+}

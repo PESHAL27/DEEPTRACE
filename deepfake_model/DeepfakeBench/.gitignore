@@ -1,0 +1,9 @@
+.idea
+*__pycache__*
+*.vscode*
+*.pyc
+*.pth
+*.pt
+*.dat
+!training/weights/xception_best.pth
+!training/pretrained/xception-b5690688.pth

@@ -1,0 +1,66 @@
+:root {
+  /* Surface / Background Palette */
+  --bg-app: #080c14;
+  --bg-sidebar: #0a0e18;
+  --bg-header: #0b101c;
+  --bg-card: #0f1728;
+  --bg-card-subtle: #0d1322;
+  --bg-card-hover: #141f36;
+  --bg-input: #0b1120;
+  --bg-active: #15223c;
+  --bg-overlay: rgba(5, 8, 14, 0.85);
+
+  /* Borders & Dividers */
+  --border-subtle: #162035;
+  --border-card: #1c2944;
+  --border-focus: #2563eb;
+  --border-highlight: #2a3d66;
+
+  /* Typography Colors */
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #475569;
+  --text-inverse: #030712;
+
+  /* Forensic Colors & Accents */
+  --accent-blue: #2563eb;
+  --accent-blue-hover: #1d4ed8;
+  --accent-blue-subtle: rgba(37, 99, 235, 0.12);
+  --accent-cyan: #06b6d4;
+  --accent-cyan-subtle: rgba(6, 182, 212, 0.12);
+
+  /* Status Colors */
+  --status-red: #ef4444;
+  --status-red-hover: #dc2626;
+  --status-red-subtle: rgba(239, 68, 68, 0.14);
+  --status-red-border: rgba(239, 68, 68, 0.35);
+
+  --status-green: #10b981;
+  --status-green-hover: #059669;
+  --status-green-subtle: rgba(16, 185, 129, 0.14);
+  --status-green-border: rgba(16, 185, 129, 0.35);
+
+  --status-amber: #f59e0b;
+  --status-amber-subtle: rgba(245, 158, 11, 0.14);
+  --status-amber-border: rgba(245, 158, 11, 0.35);
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+
+  /* Radius (Strictly minimal & professional) */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Layout Dimensions */
+  --sidebar-width: 170px;
+  --header-height: 58px;
+
+  /* Shadows (Minimal, restrained) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-popup: 0 10px 25px rgba(0, 0, 0, 0.6);
+}

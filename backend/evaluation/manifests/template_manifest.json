@@ -1,0 +1,37 @@
+{
+  "manifest_version": "1.0",
+  "dataset_name": "TEMPLATE_EVALUATION_DATASET",
+  "dataset_version": "1.0",
+  "description": "Template manifest specification for DEEPTRACE supervised detector evaluation. Use this template to configure your ground-truth labeled evaluation sets.",
+  "created_at": "2026-09-20",
+  "samples": [
+    {
+      "sample_id": "sample_0001",
+      "file_path": "datasets/authentic_sample_01.jpg",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "media_type": "image",
+      "ground_truth": "authentic",
+      "source": "CelebA-HQ",
+      "dataset_name": "CelebA-HQ-Test",
+      "split": "test",
+      "manipulation_type": "none",
+      "resolution": "1024x1024",
+      "compression_level": "raw",
+      "notes": "Reference authentic portrait subject."
+    },
+    {
+      "sample_id": "sample_0002",
+      "file_path": "datasets/manipulated_sample_01.jpg",
+      "sha256": "cb8379ac2098aa165029e3938a51da0bcecfc008fd6795f401178647f96c5b34",
+      "media_type": "image",
+      "ground_truth": "manipulated",
+      "source": "FaceForensics++",
+      "dataset_name": "FF++-Deepfakes",
+      "split": "test",
+      "manipulation_type": "face_swap",
+      "resolution": "1024x1024",
+      "compression_level": "c23",
+      "notes": "Face-swap deepfake generated using FaceSwap."
+    }
+  ]
+}

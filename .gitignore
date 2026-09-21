@@ -1,0 +1,63 @@
+# Node.js
+node_modules
+dist
+dist-ssr
+*.local
+
+# Python virtual environment
+.venv
+backend/.venv
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & OS files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+
+# User uploads & ephemeral runtime artifacts
+backend/uploads/DT-*
+backend/uploads/cv_temp_*
+backend/uploads/*.jpg
+backend/uploads/*.jpeg
+backend/uploads/*.png
+backend/uploads/*.webp
+backend/uploads/*.mp4
+backend/uploads/*.mov
+backend/uploads/thumbnails/*
+backend/uploads/heatmaps/*
+backend/uploads/forensics/frequency/*
+backend/uploads/reports/*
+backend/results/*
+!backend/uploads/.gitkeep
+!backend/results/.gitkeep
+!**/.gitkeep
+

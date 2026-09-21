@@ -1,0 +1,35 @@
+{
+  "manifest_version": "1.0",
+  "dataset_name": "DEEPTRACE-Mini-Evaluation-Set",
+  "dataset_version": "1.0",
+  "description": "Verified ground-truth evaluation subset with real facial subjects and deepfake manipulations.",
+  "created_at": "2026-09-20",
+  "samples": [
+    {
+      "sample_id": "EVAL-001",
+      "file_path": "uploads\\DT-2026-76444335_known_real.jpg",
+      "sha256": "f6e616d22147eab2fc6c49ca01722f56d834173bd5e6ed37d1e0649d2eea5671",
+      "media_type": "image",
+      "ground_truth": "authentic",
+      "source": "Verified Authentic Camera Capture",
+      "dataset_name": "DEEPTRACE-Bench",
+      "split": "test",
+      "manipulation_type": "none",
+      "resolution": "1200x896",
+      "notes": "Multi-subject real camera capture."
+    },
+    {
+      "sample_id": "EVAL-002",
+      "file_path": "uploads\\DT-2026-76454336_known_fake.jpg",
+      "sha256": "8eb193b858e4d1029e9f051a94479e345cfe2c02d2b6f25e56b238faefb63584",
+      "media_type": "image",
+      "ground_truth": "manipulated",
+      "source": "Deepfake Face-Swap Generator",
+      "dataset_name": "DEEPTRACE-Bench",
+      "split": "test",
+      "manipulation_type": "face_swap",
+      "resolution": "317x317",
+      "notes": "AI face-swap manipulation."
+    }
+  ]
+}
