@@ -126,11 +126,43 @@ Retrieves existing case telemetry and stored analysis record.
 
 ---
 
-## 6. Current Model Status
+## 6. Model & Forensic Pipeline Status
 
-| Component | Architecture / Library | Current Status | Notes |
+| Component | Architecture / Checkpoint | Operational Status | Function |
 |---|---|---|---|
-| **Media Extraction** | OpenCV + Pillow | **Operational** | Resolution, FPS, duration, frame counts |
-| **Face Detection** | MTCNN / RetinaFace interface | **Ready for Weights** | Returns `face_detector_not_loaded` |
-| **Deepfake Classifier** | PyTorch (Xception CNN) | **Ready for Weights** | Returns `model_not_loaded` (no fake predictions) |
-| **Model Attribution** | Grad-CAM | **Planned** | Activates upon classifier attachment |
+| **Media Extraction** | OpenCV + Pillow | **Operational** | Resolution, FPS, duration, frame counts, MIME validation |
+| **Face Detection** | OpenCV YuNet (`face_detection_yunet.onnx`) | **Operational** | Multi-face bounding box localization and normalization |
+| **Primary Classifier** | DeepfakeBench Xception (`xception_best.pth`) | **Operational** | Primary manipulation verdict and probability score |
+| **Comparison Detector**| MesoNet-4 (`meso4_best.pth`) | **Operational** | Secondary cross-validation and architectural disagreement detection |
+| **Visual Attribution** | Grad-CAM (Target: `conv4`) | **Operational** | Class activation heatmap overlay for localized manipulation artifacts |
+| **Spectral Forensics** | 2D Fast Fourier Transform (FFT) | **Operational** | Azimuthally integrated radial power spectrum for frequency anomalies |
+| **Temporal Stability** | Frame-to-frame score variance & optical flow | **Operational** | Video consistency graph, flicker detection, temporal anomalies |
+| **Forensic Integrity** | Cryptographic SHA-256 Digest | **Operational** | Immutable media checksum matching and automated disclaimers |
+
+---
+
+## 7. Execution Environment, Concurrency & Governance
+
+- **CPU Execution Mode**: Fully verified and operational. Supports single-threaded and multi-threaded BLAS inference.
+- **Concurrency & Model Serialization**: Requests arrive asynchronously at FastAPI endpoints; PyTorch model execution and Grad-CAM backprop are serialized via `_inference_lock` (`threading.Lock()`) to guarantee thread safety.
+- **Uncalibrated Output Probability**: Model probabilities represent raw manipulated-class softmax outputs and are not calibrated probabilities.
+- **Model Checkpoints**:
+  - Xception: `deepfake_model/DeepfakeBench/training/weights/xception_best.pth` (87.7 MB)
+  - MesoNet-4: `deepfake_model/DeepfakeBench/training/weights/meso4_best.pth` (118 KB)
+  - YuNet ONNX: `app/models/face_detection_yunet.onnx` (232 KB)
+- **Sample Verification Commands**:
+  ```bash
+  # Check system readiness probe:
+  curl http://127.0.0.1:8000/api/status
+
+  # Ingest and analyze real fixture:
+  curl -X POST -F "file=@../deepfake_model/tests/samples/known_real.jpg" http://127.0.0.1:8000/api/analyze
+
+  # Ingest and analyze fake fixture:
+  curl -X POST -F "file=@../deepfake_model/tests/samples/known_fake.jpg" http://127.0.0.1:8000/api/analyze
+  ```
+- **GPU Acceleration**: *GPU verification not performed: no supported GPU available in this environment.* Automatic CPU fallback is active.
+- **Containerization**: *Docker verification not performed: Docker CLI / daemon is not installed in this environment.*
+- **Detailed Documentation**: See [HANDOFF.md](../HANDOFF.md), [DEPLOYMENT.md](evaluation/DEPLOYMENT.md), and [DEPLOYMENT_READINESS_REPORT.md](evaluation/DEPLOYMENT_READINESS_REPORT.md).
+
+

@@ -227,7 +227,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ analysis, isOpen, onCl
               }`}
               style={isNoFace ? { backgroundColor: 'var(--border-subtle)', color: 'var(--text-muted)' } : {}}
             >
-              {isNoFace ? 'No Face' : analysis.riskLevel}
+              {isNoFace ? 'No Face' : `${analysis.mediaType === 'video' ? 'Video Probability' : 'Model Probability'}: ${analysis.confidenceScore.toFixed(1)}%`}
             </span>
           </div>
 

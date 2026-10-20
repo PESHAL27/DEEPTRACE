@@ -28,7 +28,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ reports }) => {
         createdAt: report.created,
         status: 'completed',
         prediction: report.result,
-        riskLevel: report.result === 'LIKELY MANIPULATED' ? 'High Risk' : report.result === 'REAL' ? 'Low Risk' : 'Inconclusive',
+        riskLevel: report.result === 'NO FACE DETECTED' ? 'No Face Detected' : `Model Probability: ${report.confidence.toFixed(1)}%`,
         confidenceScore: report.confidence,
         model: 'Xception (DeepfakeBench)',
         facesDetected: 1,

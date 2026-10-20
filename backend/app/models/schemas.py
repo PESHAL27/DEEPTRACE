@@ -7,6 +7,23 @@ class HealthResponse(BaseModel):
     service: str = "DEEPTRACE backend"
     version: str = "1.0.0"
 
+class ModelReadinessInfo(BaseModel):
+    xception_primary: str
+    meso4_comparison: str
+    yunet_face_detector: str
+
+class StorageReadinessInfo(BaseModel):
+    uploads: str
+    results: str
+
+class StatusResponse(BaseModel):
+    status: str
+    service: str = "DEEPTRACE Media Forensics API"
+    version: str = "1.0.0"
+    device: str
+    models: ModelReadinessInfo
+    storage: StorageReadinessInfo
+
 class MediaMetadata(BaseModel):
     width: Optional[int] = None
     height: Optional[int] = None
@@ -36,13 +53,49 @@ class ModelDetails(BaseModel):
     name: str = "Xception"
     source: str = "DeepfakeBench"
 
+class PrimaryFaceResult(BaseModel):
+    face_id: str
+    face_index: int
+    prediction: str
+    probability: float
+    real_probability: float
+    fake_probability: float
+    raw_logits: Optional[List[float]] = None
+    bounding_box: FaceBoundingBox
+    area: int
+    relative_area: float
+    margin_note: Optional[str] = None
+    is_low_margin: Optional[bool] = False
+    task_scope_note: Optional[str] = None
+
+class AllFacesResult(BaseModel):
+    face_count: int
+    prediction: str
+    probability: float
+    mean_fake_probability: float
+    mean_real_probability: float
+    aggregation_rule: str
+    margin_note: Optional[str] = None
+    is_low_margin: Optional[bool] = False
+    limitation_disclosure: Optional[str] = None
+
 class FaceAnalysisItem(BaseModel):
+    face_id: Optional[str] = None
     face_index: int
     bounding_box: FaceBoundingBox
+    bbox: Optional[FaceBoundingBox] = None
+    area: Optional[int] = None
+    relative_area: Optional[float] = None
+    is_primary: Optional[bool] = False
     prediction: str
     probability: float
     real_probability: Optional[float] = None
     fake_probability: Optional[float] = None
+    raw_logits: Optional[List[float]] = None
+    gradcam_available: Optional[bool] = False
+    gradcam_heatmap_url: Optional[str] = None
+    gradcam_overlay_url: Optional[str] = None
+    original_face_crop_url: Optional[str] = None
 
 class MetadataFinding(BaseModel):
     type: str
@@ -89,6 +142,9 @@ class VideoFrameAnalysisItem(BaseModel):
     bounding_box: Optional[FaceBoundingBox] = None
     prediction: Optional[str] = None
     probability: Optional[float] = None
+    real_probability: Optional[float] = None
+    fake_probability: Optional[float] = None
+    raw_logits: Optional[List[float]] = None
     thumbnail_url: Optional[str] = None
     gradcam_available: Optional[bool] = False
     gradcam_heatmap_url: Optional[str] = None
@@ -108,8 +164,17 @@ class DetectionResult(BaseModel):
     detection_probability: Optional[float] = None
     model_probability: Optional[float] = None
     video_probability: Optional[float] = None
+    real_probability: Optional[float] = None
+    fake_probability: Optional[float] = None
     assessment: Optional[str] = None
     faces: Optional[List[FaceAnalysisItem]] = Field(default_factory=list)
+    selected_face_id: Optional[str] = None
+    analysis_mode: Optional[str] = "primary_face"
+    primary_face_result: Optional[PrimaryFaceResult] = None
+    all_faces_result: Optional[AllFacesResult] = None
+    is_low_margin: Optional[bool] = False
+    margin_note: Optional[str] = None
+    task_scope_note: Optional[str] = None
     frame_results: Optional[List[VideoFrameAnalysisItem]] = None
     frames_analyzed: Optional[int] = None
     faces_detected: Optional[int] = None
@@ -127,6 +192,7 @@ class AnalysisResponse(BaseModel):
     analysis_id: str
     filename: str
     media_type: str  # 'image' or 'video'
+    media_url: Optional[str] = None
     file_size: int
     file_size_human: str
     status: str
@@ -140,8 +206,17 @@ class AnalysisResponse(BaseModel):
     detection_probability: Optional[float] = None
     model_probability: Optional[float] = None
     video_probability: Optional[float] = None
+    real_probability: Optional[float] = None
+    fake_probability: Optional[float] = None
     assessment: Optional[str] = None
     faces: Optional[List[FaceAnalysisItem]] = Field(default_factory=list)
+    selected_face_id: Optional[str] = None
+    analysis_mode: Optional[str] = "primary_face"
+    primary_face_result: Optional[PrimaryFaceResult] = None
+    all_faces_result: Optional[AllFacesResult] = None
+    is_low_margin: Optional[bool] = False
+    margin_note: Optional[str] = None
+    task_scope_note: Optional[str] = None
     frame_results: Optional[List[VideoFrameAnalysisItem]] = None
     frames_analyzed: Optional[int] = None
     duration: Optional[float] = None

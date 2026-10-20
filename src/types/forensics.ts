@@ -5,21 +5,35 @@ export type PredictionVerdict = 'LIKELY MANIPULATED' | 'REAL' | 'INCONCLUSIVE' |
 export type RiskSeverity = 'High' | 'Medium' | 'Low';
 
 export interface FaceBox {
+  faceId?: string;
   faceIndex?: number;
   top: number;
   left: number;
   width: number;
   height: number;
+  area?: number;
+  relativeArea?: number;
+  isPrimary?: boolean;
   label: string;
   prediction?: string;
   probability?: number;
+  realProbability?: number;
+  fakeProbability?: number;
+  rawLogits?: number[];
+  gradcamOverlayUrl?: string;
+  gradcamHeatmapUrl?: string;
+  originalFaceCropUrl?: string;
 }
 
 export interface SuspiciousFrame {
   id: string;
+  frameNumber?: number;
   timestamp: string;
   seconds: number;
   confidence: number;
+  fakeProbability?: number;
+  realProbability?: number;
+  prediction?: 'fake' | 'real';
   thumbnailUrl: string;
   status: string;
   anomalyType: string;
@@ -100,7 +114,7 @@ export interface Analysis {
   createdAt: string;
   status: 'pending' | 'analyzing' | 'completed' | 'failed';
   prediction: PredictionVerdict;
-  riskLevel: 'High Risk' | 'Low Risk' | 'Inconclusive';
+  riskLevel?: string;
   confidenceScore: number; // e.g. 92.8
   model: string;
   duration?: string;
@@ -122,7 +136,39 @@ export interface Analysis {
   comparisonFrameUrl?: string;
   faceBoundingBox?: FaceBox;
   faceBoundingBoxes?: FaceBox[];
+  selectedFaceId?: string;
+  analysisMode?: 'primary_face' | 'all_faces';
+  primaryFaceResult?: {
+    faceId: string;
+    faceIndex: number;
+    prediction: string;
+    probability: number;
+    realProbability: number;
+    fakeProbability: number;
+    rawLogits?: number[];
+    area: number;
+    relativeArea: number;
+    marginNote?: string;
+    isLowMargin?: boolean;
+    taskScopeNote?: string;
+  };
+  allFacesResult?: {
+    faceCount: number;
+    prediction: string;
+    probability: number;
+    meanFakeProbability: number;
+    meanRealProbability: number;
+    aggregationRule: string;
+    marginNote?: string;
+    isLowMargin?: boolean;
+    limitationDisclosure?: string;
+  };
+  isLowMargin?: boolean;
+  marginNote?: string;
+  taskScopeNote?: string;
   rawProbability?: number;
+  realProbability?: number;
+  fakeProbability?: number;
   metadataAnalysis?: MetadataAnalysis;
   frequencyAnalysis?: FrequencyAnalysis;
   rawFile?: File;

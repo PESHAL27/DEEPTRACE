@@ -1,0 +1,65 @@
+{
+  "audit_metadata": {
+    "audit_name": "DEEPTRACE External Benchmark Audit Closure",
+    "audit_date": "2026-10-20",
+    "benchmark_dataset": "DeepGuard InsightFace (Sowaiba01/Deepfake)",
+    "dataset_revision": "d8b189507fc026b3e0c794a06c318cb13d0c8743",
+    "evaluation_split_status": "FIXED_EVALUATION_SET_DO_NOT_TUNE",
+    "audit_verdict": "BENCHMARK_CLOSED_VERIFIED_CONSISTENT"
+  },
+  "provenance_audit": {
+    "repository_owner": "Sowaiba01 (Hugging Face)",
+    "upstream_commit": "d8b189507fc026b3e0c794a06c318cb13d0c8743",
+    "declared_license": "MIT License",
+    "license_interpretation_correction": "The MIT license grants broad permission for commercial and non-commercial copying and use. Any restrictions on deployment arise from biometric privacy regulations (GDPR/BIPA) and unverified subject consent, NOT from the copyright terms of the MIT license.",
+    "manipulated_generator": "InsightFace inswapper_128.onnx",
+    "paired_structure_status": "VERIFIED_IDENTICAL_BACKGROUND_AND_POSE",
+    "subject_consent_status": "UNVERIFIED",
+    "donor_face_index_status": "UNVERIFIED",
+    "academic_peer_review_status": "UNVERIFIED",
+    "training_data_overlap_status": "UNVERIFIED (Overlap with FaceForensics++ training videos cannot be ruled out without biometric donor-target verification)"
+  },
+  "metric_audit": {
+    "positive_class": "manipulated (1)",
+    "negative_class": "authentic (0)",
+    "decision_threshold": 0.5,
+    "scoring_type": "continuous_fake_probability",
+    "contingency_matrix": {
+      "tp": 26,
+      "fp": 7,
+      "tn": 43,
+      "fn": 24,
+      "total": 100
+    },
+    "performance_metrics": {
+      "accuracy": 0.69,
+      "precision": 0.7879,
+      "recall_sensitivity": 0.52,
+      "specificity": 0.86,
+      "false_positive_rate": 0.14,
+      "false_negative_rate": 0.48,
+      "f1_score": 0.6265,
+      "roc_auc": 0.6774,
+      "pr_auc_trapezoidal": 0.7582,
+      "average_precision_score": 0.7604
+    },
+    "pr_auc_methodology_disclosure": "The reported PR-AUC (0.7582) is calculated via trapezoidal numerical integration along the precision-recall curve. Average Precision (AP), which weights precision by recall steps, yields 0.7604. Both metrics are mathematically valid but represent distinct integral formulations and are not interchangeable.",
+    "tied_score_handling": "Unique probability thresholds are grouped; samples with identical continuous fake probabilities evaluate under identical thresholding.",
+    "missing_prediction_handling": "Failed face detections are appended to face_detection_failures and not imputed with synthetic probabilities (0 failures occurred in this 100-sample benchmark)."
+  },
+  "error_breakdown": {
+    "false_positives_count": 7,
+    "false_negatives_count": 24,
+    "correct_low_margin_count": 14,
+    "correct_standard_margin_count": 55,
+    "low_margin_total_count": 22,
+    "low_margin_heuristic": "abs(primary_face.fake_probability - 0.50) < 0.10 (0.40 < P(fake) < 0.60, or winning confidence < 60.0%)"
+  },
+  "development_datasets_status": {
+    "fixed_benchmark_evaluation_set": "IMPLEMENTED_AND_FROZEN (100 samples, pairs 0000-0049)",
+    "proposed_deepguard_train_split": "PLANNED_NOT_IMPLEMENTED (pairs 0050-0199 not downloaded)",
+    "proposed_deepguard_val_split": "PLANNED_NOT_IMPLEMENTED (pairs 0200-0249 not downloaded)",
+    "proposed_celeb_df_benchmark": "PLANNED_NOT_IMPLEMENTED",
+    "proposed_ffpp_multigenerator_benchmark": "PLANNED_NOT_IMPLEMENTED"
+  }
+}

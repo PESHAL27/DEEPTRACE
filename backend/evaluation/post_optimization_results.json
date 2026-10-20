@@ -1,0 +1,77 @@
+{
+  "A": {
+    "latency": 0.6473906000028364,
+    "rss_before": 718.984375,
+    "peak_rss": 760.36328125,
+    "rss_after": 664.10546875,
+    "prediction": "real",
+    "probability": 0.6246,
+    "faces": 2,
+    "gradcam": true,
+    "response_bytes": 5756
+  },
+  "B": {
+    "latency": 0.9890743999858387,
+    "rss_before": 664.10546875,
+    "peak_rss": 761.39453125,
+    "rss_after": 745.26953125,
+    "prediction": "fake",
+    "video_probability": 0.9206,
+    "frames_analyzed": 2,
+    "response_bytes": 16328
+  },
+  "C": {
+    "latency": 5.290214900043793,
+    "rss_before": 745.26953125,
+    "peak_rss": 1222.265625,
+    "rss_after": 1146.34375,
+    "prediction": "fake",
+    "probability": 0.9974,
+    "faces": 50,
+    "response_bytes": 26346
+  },
+  "D": {
+    "latency": 1.3641544000129215,
+    "rss_before": 1146.34375,
+    "peak_rss": 1206.546875,
+    "rss_after": 1108.4453125,
+    "prediction": "real",
+    "video_probability": 0.6864,
+    "frames_analyzed": 2,
+    "response_bytes": 19146
+  },
+  "E": {
+    "latency": 0.006280900037381798,
+    "rss_before": 1108.4453125,
+    "peak_rss": 1108.4453125,
+    "rss_after": 1108.4453125,
+    "response_bytes": 11147
+  },
+  "F": {
+    "latency": 0.0054373000166378915,
+    "rss_before": 1108.4453125,
+    "peak_rss": 1108.4453125,
+    "rss_after": 1108.4453125,
+    "response_bytes": 10223
+  },
+  "G": {
+    "latency": 1.4152628000010736,
+    "thread_lats": [
+      0.7889673000317998,
+      1.4134775000275113
+    ],
+    "rss_before": 1108.4453125,
+    "peak_rss": 1160.03515625,
+    "rss_after": 1127.94140625
+  },
+  "H": {
+    "latency": 2.0317079999949783,
+    "thread_lats": [
+      1.0016091999714263,
+      2.0314393000444397
+    ],
+    "rss_before": 1127.94140625,
+    "peak_rss": 1168.22265625,
+    "rss_after": 1125.30078125
+  }
+}

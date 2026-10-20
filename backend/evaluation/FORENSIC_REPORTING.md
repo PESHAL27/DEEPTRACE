@@ -63,7 +63,7 @@ To prevent report tampering and ensure reproducibility:
 - Reports cannot be retroactively altered by retraining or restarting backend models.
 
 ### 3.3 Security & Path Sanitization
-Under no circumstances are local server filesystem paths (such as `C:\Users\...` or `/home/...`) exposed in API responses or printable reports:
+Under no circumstances are local server filesystem paths (such as `C:\path\...` or `/home/...`) exposed in API responses or printable reports:
 - Checkpoints are sanitized to model basenames (e.g. `xception_best.pth`).
 - File paths are sanitized to relative uploaded filenames.
 - Operating system details report high-level platform names (`Windows 10` or `Linux`) without exposing username directories.

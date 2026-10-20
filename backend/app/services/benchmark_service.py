@@ -19,7 +19,8 @@ from ..config import (
     BENCHMARK_REPORTS_DIR,
     DEEPFAKE_THRESHOLD,
     MAX_BENCHMARK_SAMPLES,
-    UPLOADS_DIR
+    UPLOADS_DIR,
+    BACKEND_DIR
 )
 from ..utils.file_utils import is_safe_path, sanitize_error_message
 from ..models.benchmark_schemas import (
@@ -71,8 +72,8 @@ def resolve_sample_path(file_path_str: str) -> Path:
             raise PermissionError(f"Access to sample path outside approved benchmark directories is forbidden: {file_path_str}")
         return resolved
 
-    # Try relative to MANIFESTS_DIR, DATASETS_DIR, EVALUATION_DIR, UPLOADS_DIR
-    for base in (MANIFESTS_DIR, DATASETS_DIR, EVALUATION_DIR, UPLOADS_DIR):
+    # Try relative to MANIFESTS_DIR, DATASETS_DIR, EVALUATION_DIR, UPLOADS_DIR, BACKEND_DIR
+    for base in (MANIFESTS_DIR, DATASETS_DIR, EVALUATION_DIR, UPLOADS_DIR, BACKEND_DIR):
         resolved = (base / file_path_str).resolve()
         if any(resolved == root or root in resolved.parents for root in APPROVED_BENCHMARK_ROOTS) and resolved.exists():
             return resolved

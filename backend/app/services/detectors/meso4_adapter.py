@@ -22,11 +22,9 @@ from ...models.cross_validation_schemas import (
 from ...config import DEEPFAKE_THRESHOLD
 from ...utils.logger import logger
 
-# Paths to DeepfakeBench
-_CURRENT_DIR = Path(__file__).resolve().parent
-_BACKEND_DIR = _CURRENT_DIR.parent.parent.parent
-_DEEPFAKEBENCH_DIR = (_BACKEND_DIR.parent / "deepfake_model" / "DeepfakeBench").resolve()
-_MESO4_CHECKPOINT_PATH = _DEEPFAKEBENCH_DIR / "training" / "weights" / "meso4_best.pth"
+from ...config import MESO4_WEIGHTS_PATH, BENCH_DIR
+_DEEPFAKEBENCH_DIR = BENCH_DIR
+_MESO4_CHECKPOINT_PATH = MESO4_WEIGHTS_PATH
 
 # Ensure DeepfakeBench is importable
 if str(_DEEPFAKEBENCH_DIR) not in sys.path:
@@ -150,7 +148,7 @@ class Meso4Adapter(BaseDetector):
             # Model-specific preprocessing
             tensor = self._transform(face_rgb).unsqueeze(0).to(self._device)
 
-            with torch.no_grad():
+            with torch.inference_mode():
                 out, _ = self._model(tensor)
                 # Softmax over 2 classes: Index 0 = authentic, Index 1 = manipulated
                 probs = torch.softmax(out, dim=1)[0]
@@ -160,6 +158,15 @@ class Meso4Adapter(BaseDetector):
             elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
             is_manip = manip_prob >= t
             pred = "manipulated" if is_manip else "authentic"
+
+            raw_logits_list = [round(float(v), 4) for v in out.squeeze().tolist()]
+
+            logger.info(
+                f"[Meso4 Forensic Diagnostic] Model: {self.model_id} | Checkpoint: {_MESO4_CHECKPOINT_PATH.name} | "
+                f"Input: 256x256 RGB | Raw Logits: {raw_logits_list} | "
+                f"Class 0 (Authentic): {auth_prob:.4f} | Class 1 (Manipulated): {manip_prob:.4f} | "
+                f"Selected: {pred} (manip_prob={manip_prob:.4f}) | Decision Threshold: {t:.2f}"
+            )
 
             return NormalizedDetectorPrediction(
                 model_id=self.model_id,

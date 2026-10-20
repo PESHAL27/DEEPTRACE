@@ -1,0 +1,153 @@
+{
+  "resampling_protocol": {
+    "resampling_unit": "authentic_manipulated_pair (50 pairs in validation set)",
+    "number_of_replicates": 2000,
+    "random_seed": 42,
+    "ci_method": "empirical_percentile (2.5%, 97.5%)",
+    "sample_independence_note": "Resampling at the pair level accounts for non-independence of real and fake images sharing identical background canvas and pose."
+  },
+  "model_a_spatial_xception": {
+    "point_estimates": {
+      "tp": 24,
+      "fp": 9,
+      "tn": 41,
+      "fn": 26,
+      "total": 100,
+      "accuracy": 0.65,
+      "precision": 0.7273,
+      "recall": 0.48,
+      "specificity": 0.82,
+      "f1_score": 0.5783,
+      "false_positive_rate": 0.18,
+      "false_negative_rate": 0.52,
+      "roc_auc": 0.6334,
+      "pr_auc_trapezoidal": 0.7164,
+      "average_precision": 0.72
+    },
+    "pair_bootstrap_95ci": {
+      "accuracy": [
+        0.58,
+        0.72
+      ],
+      "recall": [
+        0.34,
+        0.62
+      ],
+      "specificity": [
+        0.72,
+        0.92
+      ],
+      "roc_auc": [
+        0.5268,
+        0.7408
+      ]
+    }
+  },
+  "model_b_frequency_only": {
+    "point_estimates": {
+      "tp": 36,
+      "fp": 5,
+      "tn": 45,
+      "fn": 14,
+      "total": 100,
+      "accuracy": 0.81,
+      "precision": 0.878,
+      "recall": 0.72,
+      "specificity": 0.9,
+      "f1_score": 0.7912,
+      "false_positive_rate": 0.1,
+      "false_negative_rate": 0.28,
+      "roc_auc": 0.8668,
+      "pr_auc_trapezoidal": 0.8878,
+      "average_precision": 0.8889
+    },
+    "pair_bootstrap_95ci": {
+      "accuracy": [
+        0.74,
+        0.88
+      ],
+      "recall": [
+        0.6,
+        0.84
+      ],
+      "specificity": [
+        0.82,
+        0.98
+      ],
+      "roc_auc": [
+        0.8152,
+        0.916
+      ]
+    }
+  },
+  "model_c_spatial_frequency_fusion": {
+    "point_estimates": {
+      "tp": 40,
+      "fp": 6,
+      "tn": 44,
+      "fn": 10,
+      "total": 100,
+      "accuracy": 0.84,
+      "precision": 0.8696,
+      "recall": 0.8,
+      "specificity": 0.88,
+      "f1_score": 0.8333,
+      "false_positive_rate": 0.12,
+      "false_negative_rate": 0.2,
+      "roc_auc": 0.9124,
+      "pr_auc_trapezoidal": 0.9171,
+      "average_precision": 0.918
+    },
+    "pair_bootstrap_95ci": {
+      "accuracy": [
+        0.77,
+        0.9
+      ],
+      "recall": [
+        0.68,
+        0.9
+      ],
+      "specificity": [
+        0.78,
+        0.96
+      ],
+      "roc_auc": [
+        0.8656,
+        0.9576
+      ]
+    }
+  },
+  "paired_comparison_model_c_minus_model_a": {
+    "mcnemar_discordance_test": {
+      "model_a_correct_model_b_wrong_b": 8,
+      "model_a_wrong_model_b_correct_c": 27,
+      "discordant_pairs_total": 35,
+      "chi2_stat_continuity_corrected": 9.2571,
+      "p_value": 0.002346,
+      "is_statistically_significant_p05": true
+    },
+    "delta_accuracy_point": 0.19,
+    "delta_accuracy_95ci": [
+      0.09,
+      0.29
+    ],
+    "delta_recall_point": 0.32,
+    "delta_recall_95ci": [
+      0.12,
+      0.5
+    ],
+    "delta_specificity_point": 0.06,
+    "delta_specificity_95ci": [
+      -0.06,
+      0.18
+    ],
+    "delta_roc_auc_point": 0.279,
+    "delta_roc_auc_95ci": [
+      0.1692,
+      0.3938
+    ],
+    "is_accuracy_gain_statistically_significant": true,
+    "is_recall_gain_statistically_significant": true,
+    "is_auc_gain_statistically_significant": true
+  }
+}

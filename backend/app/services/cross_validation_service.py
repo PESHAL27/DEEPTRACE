@@ -223,12 +223,13 @@ class CrossValidationService:
         primary_thresh = thresholds.get(primary_det.model_id, primary_det.default_threshold)
         primary_pred = primary_det.predict_face_crop(primary_crop, threshold=primary_thresh)
 
-        # 4. Evaluate Comparison Models (Meso4) on IDENTICAL face crop
+        # 4. Evaluate Comparison Models (Meso4) on IDENTICAL face crop (converted to RGB)
         comp_predictions: List[NormalizedDetectorPrediction] = []
+        primary_crop_rgb = cv2.cvtColor(primary_crop, cv2.COLOR_BGR2RGB)
         for cd in comparison_detectors:
             cd_thresh = thresholds.get(cd.model_id, cd.default_threshold)
             try:
-                res = cd.predict_face_crop(primary_crop, threshold=cd_thresh)
+                res = cd.predict_face_crop(primary_crop_rgb, threshold=cd_thresh)
             except Exception as e:
                 logger.error(f"Comparison detector '{cd.model_id}' failed: {e}")
                 res = NormalizedDetectorPrediction(
@@ -366,13 +367,14 @@ class CrossValidationService:
                     if p_pred.prediction == "manipulated":
                         primary_manip_frames += 1
 
-                    # 2. Comparison predictions on IDENTICAL frame crop
+                    # 2. Comparison predictions on IDENTICAL frame crop (converted to RGB)
                     c_preds = []
                     frame_agree = True
+                    face_crop_rgb = cv2.cvtColor(face_crop, cv2.COLOR_BGR2RGB)
                     for cd in comparison_detectors:
                         c_thresh = thresholds.get(cd.model_id, cd.default_threshold)
                         try:
-                            c_res = cd.predict_face_crop(face_crop, threshold=c_thresh)
+                            c_res = cd.predict_face_crop(face_crop_rgb, threshold=c_thresh)
                         except Exception as e:
                             logger.error(f"Comparison detector '{cd.model_id}' failed on video frame: {e}")
                             c_res = NormalizedDetectorPrediction(

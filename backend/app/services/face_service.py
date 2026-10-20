@@ -6,8 +6,7 @@ import numpy as np
 from ..models.schemas import FaceDetectionResult, FaceBoundingBox
 from ..utils.logger import logger
 
-MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
-YUNET_MODEL_PATH = MODEL_DIR / "face_detection_yunet.onnx"
+from ..config import YUNET_MODEL_PATH
 
 _face_detector = None
 
@@ -40,7 +39,7 @@ def detect_and_crop_faces(
     image_input: Union[Path, str, np.ndarray],
     save_crops: bool = False,
     crops_dir: Optional[Path] = None,
-    padding_ratio: float = 0.15
+    padding_ratio: float = 0.20
 ) -> Dict[str, Any]:
     """
     Detects faces in an image, extracts bounding boxes, and generates face crops.
@@ -49,7 +48,7 @@ def detect_and_crop_faces(
         image_input: Path to image file or numpy BGR array.
         save_crops: Whether to persist face crops to disk.
         crops_dir: Directory where crops are saved (if save_crops is True).
-        padding_ratio: Margin padding around the face box (0.15 = 15% padding).
+        padding_ratio: Margin padding around the face box (0.20 = 20% contextual padding).
 
     Returns:
         Dict containing:
@@ -86,7 +85,8 @@ def detect_and_crop_faces(
             "bounding_boxes": [],
             "crops": [],
             "crop_paths": [],
-            "status": "no_face_detected"
+            "status": "no_face_detected",
+            "source_image_bgr": img_bgr
         }
 
     bounding_boxes: List[Dict[str, int]] = []
@@ -142,7 +142,8 @@ def detect_and_crop_faces(
         "bounding_boxes": bounding_boxes,
         "crops": crops,
         "crop_paths": crop_paths,
-        "status": status
+        "status": status,
+        "source_image_bgr": img_bgr
     }
 
 
@@ -180,10 +181,12 @@ def detect_faces(media_path: Path, media_type: str) -> FaceDetectionResult:
         # Image detection branch
         detection_info = detect_and_crop_faces(media_path)
         if detection_info["count"] == 0:
-            return FaceDetectionResult(status="no_face_detected", faces=[], count=0)
-
-        boxes = [FaceBoundingBox(**b) for b in detection_info["bounding_boxes"]]
-        return FaceDetectionResult(status="completed", faces=boxes, count=len(boxes))
+            res = FaceDetectionResult(status="no_face_detected", faces=[], count=0)
+        else:
+            boxes = [FaceBoundingBox(**b) for b in detection_info["bounding_boxes"]]
+            res = FaceDetectionResult(status="completed", faces=boxes, count=len(boxes))
+        res._detection_info = detection_info
+        return res
     except Exception as e:
         logger.error(f"Face detection error on {media_path}: {e}")
         return FaceDetectionResult(status="error", faces=[], count=0)

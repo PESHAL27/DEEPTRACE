@@ -105,5 +105,6 @@ async def root():
         "service": "DEEPTRACE Media Forensics",
         "version": "1.0.0",
         "docs": "/docs",
-        "health": "/api/health"
+        "health": "/api/health",
+        "status": "/api/status"
     }

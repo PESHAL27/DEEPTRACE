@@ -1,0 +1,1526 @@
+{
+  "metrics_before": {
+    "label": "Before Fix (padding 0.15)",
+    "total_samples": 5,
+    "tp": 2,
+    "fp": 1,
+    "tn": 2,
+    "fn": 0,
+    "accuracy": 0.8,
+    "precision": 0.6666666666666666,
+    "recall": 1.0,
+    "specificity": 0.6666666666666666,
+    "f1": 0.8,
+    "fpr": 0.3333333333333333,
+    "fnr": 0.0
+  },
+  "metrics_after": {
+    "label": "After Fix (padding 0.20)",
+    "total_samples": 5,
+    "tp": 2,
+    "fp": 0,
+    "tn": 3,
+    "fn": 0,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "fpr": 0.0,
+    "fnr": 0.0
+  },
+  "results_after": [
+    {
+      "id": "known_real_01",
+      "path": "deepfake_model/tests/samples/known_real.jpg",
+      "description": "Authentic high-resolution photographic scene with detected faces (FaceForensics++ authentic baseline).",
+      "category": "authentic",
+      "ground_truth": "authentic",
+      "status": "completed",
+      "assessment": "Likely authentic",
+      "prediction": "real",
+      "model_probability": 0.6863,
+      "face_count": 2,
+      "padding_ratio": 0.2,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "real",
+          "probability": 0.8692,
+          "real_probability": 0.8692,
+          "fake_probability": 0.1308,
+          "raw_logits": [
+            0.9482,
+            -0.9457
+          ]
+        },
+        {
+          "face_index": 1,
+          "prediction": "real",
+          "probability": 0.5034,
+          "real_probability": 0.5034,
+          "fake_probability": 0.4966,
+          "raw_logits": [
+            -0.0013,
+            -0.0149
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "user_real_portrait_01",
+      "path": "backend/uploads/DT-2026-17022339_Nithin_sist_friend.jpeg",
+      "description": "Authentic mobile camera portrait of genuine person (previously false positive under tight 15% crop).",
+      "category": "authentic",
+      "ground_truth": "authentic",
+      "status": "completed",
+      "assessment": "Likely authentic",
+      "prediction": "real",
+      "model_probability": 0.6925,
+      "face_count": 1,
+      "padding_ratio": 0.2,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "real",
+          "probability": 0.6925,
+          "real_probability": 0.6925,
+          "fake_probability": 0.3075,
+          "raw_logits": [
+            0.4045,
+            -0.4074
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "user_real_photo_02",
+      "path": "backend/uploads/DT-2026-16692338_MY_PHOTO.jpeg",
+      "description": "Authentic user selfie/portrait photograph.",
+      "category": "authentic",
+      "ground_truth": "authentic",
+      "status": "completed",
+      "assessment": "Likely authentic",
+      "prediction": "real",
+      "model_probability": 0.5905,
+      "face_count": 1,
+      "padding_ratio": 0.2,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "real",
+          "probability": 0.5905,
+          "real_probability": 0.5905,
+          "fake_probability": 0.4095,
+          "raw_logits": [
+            0.1752,
+            -0.1907
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "known_fake_01",
+      "path": "deepfake_model/tests/samples/known_fake.jpg",
+      "description": "Known deepfake facial synthesis sample (FaceForensics++ / DeepfakeBench benchmark fake).",
+      "category": "manipulated",
+      "ground_truth": "manipulated",
+      "status": "completed",
+      "assessment": "Likely manipulated",
+      "prediction": "fake",
+      "model_probability": 0.8766,
+      "face_count": 1,
+      "padding_ratio": 0.2,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "fake",
+          "probability": 0.8766,
+          "real_probability": 0.1234,
+          "fake_probability": 0.8766,
+          "raw_logits": [
+            -0.9818,
+            0.9791
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "blended_fake_mosaic_50",
+      "path": "deepfake_model/DeepfakeBench/training/dataset/library/all_in_one.jpg",
+      "description": "Mosaic of 50 blended/manipulated faces from DeepfakeBench BI library.",
+      "category": "manipulated",
+      "ground_truth": "manipulated",
+      "status": "completed",
+      "assessment": "Likely manipulated",
+      "prediction": "fake",
+      "model_probability": 0.9988,
+      "face_count": 50,
+      "padding_ratio": 0.2,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "fake",
+          "probability": 0.876,
+          "real_probability": 0.124,
+          "fake_probability": 0.876,
+          "raw_logits": [
+            -0.9789,
+            0.9764
+          ]
+        },
+        {
+          "face_index": 1,
+          "prediction": "fake",
+          "probability": 0.972,
+          "real_probability": 0.028,
+          "fake_probability": 0.972,
+          "raw_logits": [
+            -1.7697,
+            1.779
+          ]
+        },
+        {
+          "face_index": 2,
+          "prediction": "fake",
+          "probability": 0.8419,
+          "real_probability": 0.1581,
+          "fake_probability": 0.8419,
+          "raw_logits": [
+            -0.8385,
+            0.8338
+          ]
+        },
+        {
+          "face_index": 3,
+          "prediction": "fake",
+          "probability": 0.7562,
+          "real_probability": 0.2438,
+          "fake_probability": 0.7562,
+          "raw_logits": [
+            -0.5706,
+            0.5616
+          ]
+        },
+        {
+          "face_index": 4,
+          "prediction": "fake",
+          "probability": 0.7976,
+          "real_probability": 0.2024,
+          "fake_probability": 0.7976,
+          "raw_logits": [
+            -0.6895,
+            0.6818
+          ]
+        },
+        {
+          "face_index": 5,
+          "prediction": "fake",
+          "probability": 0.8121,
+          "real_probability": 0.1879,
+          "fake_probability": 0.8121,
+          "raw_logits": [
+            -0.7353,
+            0.7284
+          ]
+        },
+        {
+          "face_index": 6,
+          "prediction": "fake",
+          "probability": 0.9559,
+          "real_probability": 0.0441,
+          "fake_probability": 0.9559,
+          "raw_logits": [
+            -1.5359,
+            1.5412
+          ]
+        },
+        {
+          "face_index": 7,
+          "prediction": "fake",
+          "probability": 0.993,
+          "real_probability": 0.007,
+          "fake_probability": 0.993,
+          "raw_logits": [
+            -2.4709,
+            2.4905
+          ]
+        },
+        {
+          "face_index": 8,
+          "prediction": "fake",
+          "probability": 0.5068,
+          "real_probability": 0.4932,
+          "fake_probability": 0.5068,
+          "raw_logits": [
+            -0.021,
+            0.0064
+          ]
+        },
+        {
+          "face_index": 9,
+          "prediction": "fake",
+          "probability": 0.9844,
+          "real_probability": 0.0156,
+          "fake_probability": 0.9844,
+          "raw_logits": [
+            -2.0664,
+            2.0796
+          ]
+        },
+        {
+          "face_index": 10,
+          "prediction": "fake",
+          "probability": 0.8707,
+          "real_probability": 0.1293,
+          "fake_probability": 0.8707,
+          "raw_logits": [
+            -0.9552,
+            0.9519
+          ]
+        },
+        {
+          "face_index": 11,
+          "prediction": "fake",
+          "probability": 0.7649,
+          "real_probability": 0.2351,
+          "fake_probability": 0.7649,
+          "raw_logits": [
+            -0.5943,
+            0.5854
+          ]
+        },
+        {
+          "face_index": 12,
+          "prediction": "fake",
+          "probability": 0.9745,
+          "real_probability": 0.0255,
+          "fake_probability": 0.9745,
+          "raw_logits": [
+            -1.8166,
+            1.8262
+          ]
+        },
+        {
+          "face_index": 13,
+          "prediction": "fake",
+          "probability": 0.8985,
+          "real_probability": 0.1015,
+          "fake_probability": 0.8985,
+          "raw_logits": [
+            -1.0908,
+            1.0896
+          ]
+        },
+        {
+          "face_index": 14,
+          "prediction": "fake",
+          "probability": 0.8595,
+          "real_probability": 0.1405,
+          "fake_probability": 0.8595,
+          "raw_logits": [
+            -0.9073,
+            0.9038
+          ]
+        },
+        {
+          "face_index": 15,
+          "prediction": "fake",
+          "probability": 0.9713,
+          "real_probability": 0.0287,
+          "fake_probability": 0.9713,
+          "raw_logits": [
+            -1.7562,
+            1.7652
+          ]
+        },
+        {
+          "face_index": 16,
+          "prediction": "fake",
+          "probability": 0.9917,
+          "real_probability": 0.0083,
+          "fake_probability": 0.9917,
+          "raw_logits": [
+            -2.3852,
+            2.4037
+          ]
+        },
+        {
+          "face_index": 17,
+          "prediction": "fake",
+          "probability": 0.9069,
+          "real_probability": 0.0931,
+          "fake_probability": 0.9069,
+          "raw_logits": [
+            -1.1385,
+            1.1383
+          ]
+        },
+        {
+          "face_index": 18,
+          "prediction": "fake",
+          "probability": 0.9717,
+          "real_probability": 0.0283,
+          "fake_probability": 0.9717,
+          "raw_logits": [
+            -1.7643,
+            1.7734
+          ]
+        },
+        {
+          "face_index": 19,
+          "prediction": "fake",
+          "probability": 0.9988,
+          "real_probability": 0.0012,
+          "fake_probability": 0.9988,
+          "raw_logits": [
+            -3.3414,
+            3.3747
+          ]
+        },
+        {
+          "face_index": 20,
+          "prediction": "fake",
+          "probability": 0.8991,
+          "real_probability": 0.1009,
+          "fake_probability": 0.8991,
+          "raw_logits": [
+            -1.0939,
+            1.0931
+          ]
+        },
+        {
+          "face_index": 21,
+          "prediction": "fake",
+          "probability": 0.9936,
+          "real_probability": 0.0064,
+          "fake_probability": 0.9936,
+          "raw_logits": [
+            -2.5096,
+            2.5306
+          ]
+        },
+        {
+          "face_index": 22,
+          "prediction": "fake",
+          "probability": 0.9631,
+          "real_probability": 0.0369,
+          "fake_probability": 0.9631,
+          "raw_logits": [
+            -1.6271,
+            1.6338
+          ]
+        },
+        {
+          "face_index": 23,
+          "prediction": "fake",
+          "probability": 0.994,
+          "real_probability": 0.006,
+          "fake_probability": 0.994,
+          "raw_logits": [
+            -2.5442,
+            2.5649
+          ]
+        },
+        {
+          "face_index": 24,
+          "prediction": "fake",
+          "probability": 0.9881,
+          "real_probability": 0.0119,
+          "fake_probability": 0.9881,
+          "raw_logits": [
+            -2.2021,
+            2.2184
+          ]
+        },
+        {
+          "face_index": 25,
+          "prediction": "fake",
+          "probability": 0.9958,
+          "real_probability": 0.0042,
+          "fake_probability": 0.9958,
+          "raw_logits": [
+            -2.7205,
+            2.7441
+          ]
+        },
+        {
+          "face_index": 26,
+          "prediction": "fake",
+          "probability": 0.9807,
+          "real_probability": 0.0193,
+          "fake_probability": 0.9807,
+          "raw_logits": [
+            -1.9576,
+            1.9695
+          ]
+        },
+        {
+          "face_index": 27,
+          "prediction": "real",
+          "probability": 0.8229,
+          "real_probability": 0.8229,
+          "fake_probability": 0.1771,
+          "raw_logits": [
+            0.7666,
+            -0.7698
+          ]
+        },
+        {
+          "face_index": 28,
+          "prediction": "fake",
+          "probability": 0.9685,
+          "real_probability": 0.0315,
+          "fake_probability": 0.9685,
+          "raw_logits": [
+            -1.7087,
+            1.7169
+          ]
+        },
+        {
+          "face_index": 29,
+          "prediction": "fake",
+          "probability": 0.978,
+          "real_probability": 0.022,
+          "fake_probability": 0.978,
+          "raw_logits": [
+            -1.8909,
+            1.9019
+          ]
+        },
+        {
+          "face_index": 30,
+          "prediction": "fake",
+          "probability": 0.9935,
+          "real_probability": 0.0065,
+          "fake_probability": 0.9935,
+          "raw_logits": [
+            -2.5038,
+            2.5243
+          ]
+        },
+        {
+          "face_index": 31,
+          "prediction": "fake",
+          "probability": 0.9803,
+          "real_probability": 0.0197,
+          "fake_probability": 0.9803,
+          "raw_logits": [
+            -1.9475,
+            1.9597
+          ]
+        },
+        {
+          "face_index": 32,
+          "prediction": "fake",
+          "probability": 0.9346,
+          "real_probability": 0.0654,
+          "fake_probability": 0.9346,
+          "raw_logits": [
+            -1.3287,
+            1.3312
+          ]
+        },
+        {
+          "face_index": 33,
+          "prediction": "fake",
+          "probability": 0.9424,
+          "real_probability": 0.0576,
+          "fake_probability": 0.9424,
+          "raw_logits": [
+            -1.3953,
+            1.399
+          ]
+        },
+        {
+          "face_index": 34,
+          "prediction": "fake",
+          "probability": 0.9945,
+          "real_probability": 0.0055,
+          "fake_probability": 0.9945,
+          "raw_logits": [
+            -2.5912,
+            2.6135
+          ]
+        },
+        {
+          "face_index": 35,
+          "prediction": "real",
+          "probability": 0.6055,
+          "real_probability": 0.6055,
+          "fake_probability": 0.3945,
+          "raw_logits": [
+            0.2093,
+            -0.2193
+          ]
+        },
+        {
+          "face_index": 36,
+          "prediction": "fake",
+          "probability": 0.9712,
+          "real_probability": 0.0288,
+          "fake_probability": 0.9712,
+          "raw_logits": [
+            -1.7548,
+            1.7637
+          ]
+        },
+        {
+          "face_index": 37,
+          "prediction": "fake",
+          "probability": 0.9182,
+          "real_probability": 0.0818,
+          "fake_probability": 0.9182,
+          "raw_logits": [
+            -1.2089,
+            1.2095
+          ]
+        },
+        {
+          "face_index": 38,
+          "prediction": "fake",
+          "probability": 0.8301,
+          "real_probability": 0.1699,
+          "fake_probability": 0.8301,
+          "raw_logits": [
+            -0.7953,
+            0.7911
+          ]
+        },
+        {
+          "face_index": 39,
+          "prediction": "fake",
+          "probability": 0.6142,
+          "real_probability": 0.3858,
+          "fake_probability": 0.6142,
+          "raw_logits": [
+            -0.2381,
+            0.227
+          ]
+        },
+        {
+          "face_index": 40,
+          "prediction": "fake",
+          "probability": 0.9869,
+          "real_probability": 0.0131,
+          "fake_probability": 0.9869,
+          "raw_logits": [
+            -2.1552,
+            2.1702
+          ]
+        },
+        {
+          "face_index": 41,
+          "prediction": "real",
+          "probability": 0.8423,
+          "real_probability": 0.8423,
+          "fake_probability": 0.1577,
+          "raw_logits": [
+            0.837,
+            -0.8383
+          ]
+        },
+        {
+          "face_index": 42,
+          "prediction": "real",
+          "probability": 0.5426,
+          "real_probability": 0.5426,
+          "fake_probability": 0.4574,
+          "raw_logits": [
+            0.0786,
+            -0.0923
+          ]
+        },
+        {
+          "face_index": 43,
+          "prediction": "fake",
+          "probability": 0.9847,
+          "real_probability": 0.0153,
+          "fake_probability": 0.9847,
+          "raw_logits": [
+            -2.0744,
+            2.088
+          ]
+        },
+        {
+          "face_index": 44,
+          "prediction": "fake",
+          "probability": 0.9759,
+          "real_probability": 0.0241,
+          "fake_probability": 0.9759,
+          "raw_logits": [
+            -1.8463,
+            1.8564
+          ]
+        },
+        {
+          "face_index": 45,
+          "prediction": "fake",
+          "probability": 0.8441,
+          "real_probability": 0.1559,
+          "fake_probability": 0.8441,
+          "raw_logits": [
+            -0.8467,
+            0.8422
+          ]
+        },
+        {
+          "face_index": 46,
+          "prediction": "fake",
+          "probability": 0.9975,
+          "real_probability": 0.0025,
+          "fake_probability": 0.9975,
+          "raw_logits": [
+            -2.9902,
+            3.0178
+          ]
+        },
+        {
+          "face_index": 47,
+          "prediction": "fake",
+          "probability": 0.8602,
+          "real_probability": 0.1398,
+          "fake_probability": 0.8602,
+          "raw_logits": [
+            -0.9103,
+            0.9066
+          ]
+        },
+        {
+          "face_index": 48,
+          "prediction": "real",
+          "probability": 0.5786,
+          "real_probability": 0.5786,
+          "fake_probability": 0.4214,
+          "raw_logits": [
+            0.1527,
+            -0.1643
+          ]
+        },
+        {
+          "face_index": 49,
+          "prediction": "fake",
+          "probability": 0.9965,
+          "real_probability": 0.0035,
+          "fake_probability": 0.9965,
+          "raw_logits": [
+            -2.8124,
+            2.8375
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "control_no_face_01",
+      "path": "public/assets/no_face.jpg",
+      "description": "Natural landscape scene without human face (control fixture).",
+      "category": "control",
+      "ground_truth": "no_face",
+      "status": "no_face_detected",
+      "assessment": "No face detected",
+      "prediction": null,
+      "model_probability": null,
+      "face_count": 0,
+      "padding_ratio": 0.2,
+      "faces": [],
+      "correct": true
+    },
+    {
+      "id": "control_no_face_02",
+      "path": "backend/test_fixtures/test_image.jpg",
+      "description": "Synthetic color test image without human face (control fixture).",
+      "category": "control",
+      "ground_truth": "no_face",
+      "status": "no_face_detected",
+      "assessment": "No face detected",
+      "prediction": null,
+      "model_probability": null,
+      "face_count": 0,
+      "padding_ratio": 0.2,
+      "faces": [],
+      "correct": true
+    },
+    {
+      "id": "control_no_face_03",
+      "path": "backend/test_fixtures/test_image.png",
+      "description": "Synthetic PNG test fixture without human face (control fixture).",
+      "category": "control",
+      "ground_truth": "no_face",
+      "status": "no_face_detected",
+      "assessment": "No face detected",
+      "prediction": null,
+      "model_probability": null,
+      "face_count": 0,
+      "padding_ratio": 0.2,
+      "faces": [],
+      "correct": true
+    },
+    {
+      "id": "control_group_undetected",
+      "path": "backend/uploads/DT-2026-40916781_SIST_Trio.jpeg",
+      "description": "Authentic group photograph where face resolution does not reach detector threshold.",
+      "category": "control",
+      "ground_truth": "no_face",
+      "status": "no_face_detected",
+      "assessment": "No face detected",
+      "prediction": null,
+      "model_probability": null,
+      "face_count": 0,
+      "padding_ratio": 0.2,
+      "faces": [],
+      "correct": true
+    }
+  ],
+  "results_before": [
+    {
+      "id": "known_real_01",
+      "path": "deepfake_model/tests/samples/known_real.jpg",
+      "description": "Authentic high-resolution photographic scene with detected faces (FaceForensics++ authentic baseline).",
+      "category": "authentic",
+      "ground_truth": "authentic",
+      "status": "completed",
+      "assessment": "Likely authentic",
+      "prediction": "real",
+      "model_probability": 0.6246,
+      "face_count": 2,
+      "padding_ratio": 0.15,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "real",
+          "probability": 0.7182,
+          "real_probability": 0.7182,
+          "fake_probability": 0.2818,
+          "raw_logits": [
+            0.4632,
+            -0.4721
+          ]
+        },
+        {
+          "face_index": 1,
+          "prediction": "real",
+          "probability": 0.5311,
+          "real_probability": 0.5311,
+          "fake_probability": 0.4689,
+          "raw_logits": [
+            0.0541,
+            -0.0703
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "user_real_portrait_01",
+      "path": "backend/uploads/DT-2026-17022339_Nithin_sist_friend.jpeg",
+      "description": "Authentic mobile camera portrait of genuine person (previously false positive under tight 15% crop).",
+      "category": "authentic",
+      "ground_truth": "authentic",
+      "status": "completed",
+      "assessment": "Likely manipulated",
+      "prediction": "fake",
+      "model_probability": 0.5259,
+      "face_count": 1,
+      "padding_ratio": 0.15,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "fake",
+          "probability": 0.5259,
+          "real_probability": 0.4741,
+          "fake_probability": 0.5259,
+          "raw_logits": [
+            -0.0546,
+            0.0489
+          ]
+        }
+      ],
+      "correct": false
+    },
+    {
+      "id": "user_real_photo_02",
+      "path": "backend/uploads/DT-2026-16692338_MY_PHOTO.jpeg",
+      "description": "Authentic user selfie/portrait photograph.",
+      "category": "authentic",
+      "ground_truth": "authentic",
+      "status": "completed",
+      "assessment": "Likely authentic",
+      "prediction": "real",
+      "model_probability": 0.5583,
+      "face_count": 1,
+      "padding_ratio": 0.15,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "real",
+          "probability": 0.5583,
+          "real_probability": 0.5583,
+          "fake_probability": 0.4417,
+          "raw_logits": [
+            0.1087,
+            -0.1256
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "known_fake_01",
+      "path": "deepfake_model/tests/samples/known_fake.jpg",
+      "description": "Known deepfake facial synthesis sample (FaceForensics++ / DeepfakeBench benchmark fake).",
+      "category": "manipulated",
+      "ground_truth": "manipulated",
+      "status": "completed",
+      "assessment": "Likely manipulated",
+      "prediction": "fake",
+      "model_probability": 0.8133,
+      "face_count": 1,
+      "padding_ratio": 0.15,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "fake",
+          "probability": 0.8133,
+          "real_probability": 0.1867,
+          "fake_probability": 0.8133,
+          "raw_logits": [
+            -0.7388,
+            0.7325
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "blended_fake_mosaic_50",
+      "path": "deepfake_model/DeepfakeBench/training/dataset/library/all_in_one.jpg",
+      "description": "Mosaic of 50 blended/manipulated faces from DeepfakeBench BI library.",
+      "category": "manipulated",
+      "ground_truth": "manipulated",
+      "status": "completed",
+      "assessment": "Likely manipulated",
+      "prediction": "fake",
+      "model_probability": 0.9974,
+      "face_count": 50,
+      "padding_ratio": 0.15,
+      "faces": [
+        {
+          "face_index": 0,
+          "prediction": "fake",
+          "probability": 0.7173,
+          "real_probability": 0.2827,
+          "fake_probability": 0.7173,
+          "raw_logits": [
+            -0.4708,
+            0.4605
+          ]
+        },
+        {
+          "face_index": 1,
+          "prediction": "fake",
+          "probability": 0.9637,
+          "real_probability": 0.0363,
+          "fake_probability": 0.9637,
+          "raw_logits": [
+            -1.6353,
+            1.6424
+          ]
+        },
+        {
+          "face_index": 2,
+          "prediction": "fake",
+          "probability": 0.8471,
+          "real_probability": 0.1529,
+          "fake_probability": 0.8471,
+          "raw_logits": [
+            -0.858,
+            0.8537
+          ]
+        },
+        {
+          "face_index": 3,
+          "prediction": "fake",
+          "probability": 0.6168,
+          "real_probability": 0.3832,
+          "fake_probability": 0.6168,
+          "raw_logits": [
+            -0.245,
+            0.2312
+          ]
+        },
+        {
+          "face_index": 4,
+          "prediction": "fake",
+          "probability": 0.7812,
+          "real_probability": 0.2188,
+          "fake_probability": 0.7812,
+          "raw_logits": [
+            -0.6406,
+            0.6323
+          ]
+        },
+        {
+          "face_index": 5,
+          "prediction": "fake",
+          "probability": 0.8848,
+          "real_probability": 0.1152,
+          "fake_probability": 0.8848,
+          "raw_logits": [
+            -1.0208,
+            1.0182
+          ]
+        },
+        {
+          "face_index": 6,
+          "prediction": "fake",
+          "probability": 0.9389,
+          "real_probability": 0.0611,
+          "fake_probability": 0.9389,
+          "raw_logits": [
+            -1.3645,
+            1.367
+          ]
+        },
+        {
+          "face_index": 7,
+          "prediction": "fake",
+          "probability": 0.9592,
+          "real_probability": 0.0408,
+          "fake_probability": 0.9592,
+          "raw_logits": [
+            -1.5761,
+            1.5821
+          ]
+        },
+        {
+          "face_index": 8,
+          "prediction": "fake",
+          "probability": 0.6512,
+          "real_probability": 0.3488,
+          "fake_probability": 0.6512,
+          "raw_logits": [
+            -0.3186,
+            0.3057
+          ]
+        },
+        {
+          "face_index": 9,
+          "prediction": "fake",
+          "probability": 0.9758,
+          "real_probability": 0.0242,
+          "fake_probability": 0.9758,
+          "raw_logits": [
+            -1.843,
+            1.8529
+          ]
+        },
+        {
+          "face_index": 10,
+          "prediction": "fake",
+          "probability": 0.9172,
+          "real_probability": 0.0828,
+          "fake_probability": 0.9172,
+          "raw_logits": [
+            -1.2021,
+            1.2025
+          ]
+        },
+        {
+          "face_index": 11,
+          "prediction": "fake",
+          "probability": 0.761,
+          "real_probability": 0.239,
+          "fake_probability": 0.761,
+          "raw_logits": [
+            -0.5836,
+            0.5745
+          ]
+        },
+        {
+          "face_index": 12,
+          "prediction": "fake",
+          "probability": 0.9931,
+          "real_probability": 0.0069,
+          "fake_probability": 0.9931,
+          "raw_logits": [
+            -2.4715,
+            2.4908
+          ]
+        },
+        {
+          "face_index": 13,
+          "prediction": "fake",
+          "probability": 0.8696,
+          "real_probability": 0.1304,
+          "fake_probability": 0.8696,
+          "raw_logits": [
+            -0.9505,
+            0.9473
+          ]
+        },
+        {
+          "face_index": 14,
+          "prediction": "fake",
+          "probability": 0.8015,
+          "real_probability": 0.1985,
+          "fake_probability": 0.8015,
+          "raw_logits": [
+            -0.7015,
+            0.6945
+          ]
+        },
+        {
+          "face_index": 15,
+          "prediction": "fake",
+          "probability": 0.9858,
+          "real_probability": 0.0142,
+          "fake_probability": 0.9858,
+          "raw_logits": [
+            -2.1148,
+            2.1288
+          ]
+        },
+        {
+          "face_index": 16,
+          "prediction": "fake",
+          "probability": 0.9881,
+          "real_probability": 0.0119,
+          "fake_probability": 0.9881,
+          "raw_logits": [
+            -2.2017,
+            2.2173
+          ]
+        },
+        {
+          "face_index": 17,
+          "prediction": "fake",
+          "probability": 0.9281,
+          "real_probability": 0.0719,
+          "fake_probability": 0.9281,
+          "raw_logits": [
+            -1.2784,
+            1.2801
+          ]
+        },
+        {
+          "face_index": 18,
+          "prediction": "fake",
+          "probability": 0.9691,
+          "real_probability": 0.0309,
+          "fake_probability": 0.9691,
+          "raw_logits": [
+            -1.7178,
+            1.7261
+          ]
+        },
+        {
+          "face_index": 19,
+          "prediction": "fake",
+          "probability": 0.9974,
+          "real_probability": 0.0026,
+          "fake_probability": 0.9974,
+          "raw_logits": [
+            -2.9624,
+            2.9896
+          ]
+        },
+        {
+          "face_index": 20,
+          "prediction": "fake",
+          "probability": 0.932,
+          "real_probability": 0.068,
+          "fake_probability": 0.932,
+          "raw_logits": [
+            -1.3074,
+            1.3097
+          ]
+        },
+        {
+          "face_index": 21,
+          "prediction": "fake",
+          "probability": 0.9708,
+          "real_probability": 0.0292,
+          "fake_probability": 0.9708,
+          "raw_logits": [
+            -1.7468,
+            1.756
+          ]
+        },
+        {
+          "face_index": 22,
+          "prediction": "fake",
+          "probability": 0.947,
+          "real_probability": 0.053,
+          "fake_probability": 0.947,
+          "raw_logits": [
+            -1.4393,
+            1.4433
+          ]
+        },
+        {
+          "face_index": 23,
+          "prediction": "fake",
+          "probability": 0.9906,
+          "real_probability": 0.0094,
+          "fake_probability": 0.9906,
+          "raw_logits": [
+            -2.3206,
+            2.3377
+          ]
+        },
+        {
+          "face_index": 24,
+          "prediction": "fake",
+          "probability": 0.9379,
+          "real_probability": 0.0621,
+          "fake_probability": 0.9379,
+          "raw_logits": [
+            -1.3557,
+            1.3587
+          ]
+        },
+        {
+          "face_index": 25,
+          "prediction": "fake",
+          "probability": 0.9917,
+          "real_probability": 0.0083,
+          "fake_probability": 0.9917,
+          "raw_logits": [
+            -2.3806,
+            2.3991
+          ]
+        },
+        {
+          "face_index": 26,
+          "prediction": "fake",
+          "probability": 0.9675,
+          "real_probability": 0.0325,
+          "fake_probability": 0.9675,
+          "raw_logits": [
+            -1.6927,
+            1.7008
+          ]
+        },
+        {
+          "face_index": 27,
+          "prediction": "real",
+          "probability": 0.8587,
+          "real_probability": 0.8587,
+          "fake_probability": 0.1413,
+          "raw_logits": [
+            0.9019,
+            -0.9023
+          ]
+        },
+        {
+          "face_index": 28,
+          "prediction": "fake",
+          "probability": 0.952,
+          "real_probability": 0.048,
+          "fake_probability": 0.952,
+          "raw_logits": [
+            -1.4913,
+            1.4959
+          ]
+        },
+        {
+          "face_index": 29,
+          "prediction": "fake",
+          "probability": 0.9853,
+          "real_probability": 0.0147,
+          "fake_probability": 0.9853,
+          "raw_logits": [
+            -2.0959,
+            2.1097
+          ]
+        },
+        {
+          "face_index": 30,
+          "prediction": "fake",
+          "probability": 0.9851,
+          "real_probability": 0.0149,
+          "fake_probability": 0.9851,
+          "raw_logits": [
+            -2.0883,
+            2.1022
+          ]
+        },
+        {
+          "face_index": 31,
+          "prediction": "fake",
+          "probability": 0.9854,
+          "real_probability": 0.0146,
+          "fake_probability": 0.9854,
+          "raw_logits": [
+            -2.0971,
+            2.1116
+          ]
+        },
+        {
+          "face_index": 32,
+          "prediction": "fake",
+          "probability": 0.9231,
+          "real_probability": 0.0769,
+          "fake_probability": 0.9231,
+          "raw_logits": [
+            -1.2424,
+            1.2435
+          ]
+        },
+        {
+          "face_index": 33,
+          "prediction": "fake",
+          "probability": 0.9758,
+          "real_probability": 0.0242,
+          "fake_probability": 0.9758,
+          "raw_logits": [
+            -1.8436,
+            1.8537
+          ]
+        },
+        {
+          "face_index": 34,
+          "prediction": "fake",
+          "probability": 0.995,
+          "real_probability": 0.005,
+          "fake_probability": 0.995,
+          "raw_logits": [
+            -2.6387,
+            2.6616
+          ]
+        },
+        {
+          "face_index": 35,
+          "prediction": "fake",
+          "probability": 0.7181,
+          "real_probability": 0.2819,
+          "fake_probability": 0.7181,
+          "raw_logits": [
+            -0.4729,
+            0.462
+          ]
+        },
+        {
+          "face_index": 36,
+          "prediction": "fake",
+          "probability": 0.9367,
+          "real_probability": 0.0633,
+          "fake_probability": 0.9367,
+          "raw_logits": [
+            -1.3462,
+            1.3486
+          ]
+        },
+        {
+          "face_index": 37,
+          "prediction": "fake",
+          "probability": 0.8872,
+          "real_probability": 0.1128,
+          "fake_probability": 0.8872,
+          "raw_logits": [
+            -1.0324,
+            1.0303
+          ]
+        },
+        {
+          "face_index": 38,
+          "prediction": "real",
+          "probability": 0.5389,
+          "real_probability": 0.5389,
+          "fake_probability": 0.4611,
+          "raw_logits": [
+            0.0729,
+            -0.0832
+          ]
+        },
+        {
+          "face_index": 39,
+          "prediction": "fake",
+          "probability": 0.5461,
+          "real_probability": 0.4539,
+          "fake_probability": 0.5461,
+          "raw_logits": [
+            -0.099,
+            0.0861
+          ]
+        },
+        {
+          "face_index": 40,
+          "prediction": "fake",
+          "probability": 0.9645,
+          "real_probability": 0.0355,
+          "fake_probability": 0.9645,
+          "raw_logits": [
+            -1.6481,
+            1.6552
+          ]
+        },
+        {
+          "face_index": 41,
+          "prediction": "real",
+          "probability": 0.9039,
+          "real_probability": 0.9039,
+          "fake_probability": 0.0961,
+          "raw_logits": [
+            1.1229,
+            -1.1181
+          ]
+        },
+        {
+          "face_index": 42,
+          "prediction": "real",
+          "probability": 0.7198,
+          "real_probability": 0.7198,
+          "fake_probability": 0.2802,
+          "raw_logits": [
+            0.4675,
+            -0.4762
+          ]
+        },
+        {
+          "face_index": 43,
+          "prediction": "fake",
+          "probability": 0.9796,
+          "real_probability": 0.0204,
+          "fake_probability": 0.9796,
+          "raw_logits": [
+            -1.9308,
+            1.9425
+          ]
+        },
+        {
+          "face_index": 44,
+          "prediction": "fake",
+          "probability": 0.9724,
+          "real_probability": 0.0276,
+          "fake_probability": 0.9724,
+          "raw_logits": [
+            -1.7772,
+            1.7863
+          ]
+        },
+        {
+          "face_index": 45,
+          "prediction": "fake",
+          "probability": 0.6874,
+          "real_probability": 0.3126,
+          "fake_probability": 0.6874,
+          "raw_logits": [
+            -0.3999,
+            0.3883
+          ]
+        },
+        {
+          "face_index": 46,
+          "prediction": "fake",
+          "probability": 0.9906,
+          "real_probability": 0.0094,
+          "fake_probability": 0.9906,
+          "raw_logits": [
+            -2.3191,
+            2.3362
+          ]
+        },
+        {
+          "face_index": 47,
+          "prediction": "fake",
+          "probability": 0.8534,
+          "real_probability": 0.1466,
+          "fake_probability": 0.8534,
+          "raw_logits": [
+            -0.8828,
+            0.8788
+          ]
+        },
+        {
+          "face_index": 48,
+          "prediction": "real",
+          "probability": 0.5553,
+          "real_probability": 0.5553,
+          "fake_probability": 0.4447,
+          "raw_logits": [
+            0.1044,
+            -0.1175
+          ]
+        },
+        {
+          "face_index": 49,
+          "prediction": "fake",
+          "probability": 0.9897,
+          "real_probability": 0.0103,
+          "fake_probability": 0.9897,
+          "raw_logits": [
+            -2.2762,
+            2.293
+          ]
+        }
+      ],
+      "correct": true
+    },
+    {
+      "id": "control_no_face_01",
+      "path": "public/assets/no_face.jpg",
+      "description": "Natural landscape scene without human face (control fixture).",
+      "category": "control",
+      "ground_truth": "no_face",
+      "status": "no_face_detected",
+      "assessment": "No face detected",
+      "prediction": null,
+      "model_probability": null,
+      "face_count": 0,
+      "padding_ratio": 0.15,
+      "faces": [],
+      "correct": true
+    },
+    {
+      "id": "control_no_face_02",
+      "path": "backend/test_fixtures/test_image.jpg",
+      "description": "Synthetic color test image without human face (control fixture).",
+      "category": "control",
+      "ground_truth": "no_face",
+      "status": "no_face_detected",
+      "assessment": "No face detected",
+      "prediction": null,
+      "model_probability": null,
+      "face_count": 0,
+      "padding_ratio": 0.15,
+      "faces": [],
+      "correct": true
+    },
+    {
+      "id": "control_no_face_03",
+      "path": "backend/test_fixtures/test_image.png",
+      "description": "Synthetic PNG test fixture without human face (control fixture).",
+      "category": "control",
+      "ground_truth": "no_face",
+      "status": "no_face_detected",
+      "assessment": "No face detected",
+      "prediction": null,
+      "model_probability": null,
+      "face_count": 0,
+      "padding_ratio": 0.15,
+      "faces": [],
+      "correct": true
+    },
+    {
+      "id": "control_group_undetected",
+      "path": "backend/uploads/DT-2026-40916781_SIST_Trio.jpeg",
+      "description": "Authentic group photograph where face resolution does not reach detector threshold.",
+      "category": "control",
+      "ground_truth": "no_face",
+      "status": "no_face_detected",
+      "assessment": "No face detected",
+      "prediction": null,
+      "model_probability": null,
+      "face_count": 0,
+      "padding_ratio": 0.15,
+      "faces": [],
+      "correct": true
+    }
+  ]
+}

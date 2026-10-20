@@ -1,17 +1,35 @@
 from pathlib import Path
+import os
+from PIL import Image
+
+# Load environment variables from .env if present
+try:
+    from dotenv import load_dotenv
+    _backend_dir = Path(__file__).resolve().parent.parent
+    _root_dir = _backend_dir.parent
+    if (_root_dir / ".env").exists():
+        load_dotenv(_root_dir / ".env")
+    elif (_backend_dir / ".env").exists():
+        load_dotenv(_backend_dir / ".env")
+    else:
+        load_dotenv()
+except ImportError:
+    pass
 
 # Base directories
 BACKEND_DIR = Path(__file__).resolve().parent.parent
-UPLOADS_DIR = BACKEND_DIR / "uploads"
-RESULTS_DIR = BACKEND_DIR / "results"
+WORKSPACE_ROOT = BACKEND_DIR.parent
+
+# Configurable storage directories (supports relative to BACKEND_DIR or absolute)
+_uploads_env = os.getenv("UPLOADS_DIR", "uploads")
+UPLOADS_DIR = Path(_uploads_env) if os.path.isabs(_uploads_env) else (BACKEND_DIR / _uploads_env)
+
+_results_env = os.getenv("RESULTS_DIR", "results")
+RESULTS_DIR = Path(_results_env) if os.path.isabs(_results_env) else (BACKEND_DIR / _results_env)
 
 # Ensure directories exist
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-# Security & Validation Constraints
-import os
-from PIL import Image
 
 # Media-specific size limits (configurable via env)
 MAX_IMAGE_SIZE_BYTES: int = int(os.getenv("MAX_IMAGE_SIZE_BYTES", str(20 * 1024 * 1024)))  # 20 MB
@@ -55,13 +73,31 @@ MAGIC_NUMBERS = {
     "mov": [b"moov", b"mdat", b"ftyp", b"wide", b"\x00\x00\x00"],
 }
 
-# CORS settings for development
-CORS_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# Server binding configuration
+HOST: str = os.getenv("HOST", "0.0.0.0")
+PORT: int = int(os.getenv("PORT", "8000"))
+
+# Configurable Model Paths
+DEEPFAKE_MODEL_DIR = Path(os.getenv("DEEPFAKE_MODEL_DIR", str(WORKSPACE_ROOT / "deepfake_model")))
+BENCH_DIR = DEEPFAKE_MODEL_DIR / "DeepfakeBench"
+TRAINING_DIR = BENCH_DIR / "training"
+
+XCEPTION_CONFIG_PATH = Path(os.getenv("XCEPTION_CONFIG_PATH", str(TRAINING_DIR / "config" / "detector" / "xception.yaml")))
+XCEPTION_WEIGHTS_PATH = Path(os.getenv("XCEPTION_WEIGHTS_PATH", str(TRAINING_DIR / "weights" / "xception_best.pth")))
+MESO4_WEIGHTS_PATH = Path(os.getenv("MESO4_CHECKPOINT_PATH", str(TRAINING_DIR / "weights" / "meso4_best.pth")))
+YUNET_MODEL_PATH = Path(os.getenv("YUNET_MODEL_PATH", str(BACKEND_DIR / "app" / "models" / "face_detection_yunet.onnx")))
+
+# CORS settings (configurable via comma-separated CORS_ORIGINS)
+_cors_env = os.getenv("CORS_ORIGINS", "")
+if _cors_env.strip():
+    CORS_ORIGINS = [orig.strip() for orig in _cors_env.split(",") if orig.strip()]
+else:
+    CORS_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
 # Thumbnails directory for video frame previews
 THUMBNAILS_DIR = UPLOADS_DIR / "thumbnails"

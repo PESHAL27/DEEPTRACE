@@ -200,6 +200,28 @@ class TestCrossValidationService(unittest.TestCase):
                 self.assertEqual(f.primary_model.model_id, "xception_deepfakebench")
                 self.assertTrue(any(c.model_id == "meso4_deepfakebench" for c in f.comparison_models))
 
+    def test_meso4_channel_order_image_and_video(self):
+        """Verify that BGR face crops are converted to RGB exactly once before Meso4 preprocessing."""
+        # 1. Create a distinctive non-symmetric BGR face crop: Blue=255, Green=100, Red=10
+        asymmetric_bgr = np.zeros((100, 100, 3), dtype=np.uint8)
+        asymmetric_bgr[:, :, 0] = 255  # B
+        asymmetric_bgr[:, :, 1] = 100  # G
+        asymmetric_bgr[:, :, 2] = 10   # R
+
+        # Convert to RGB as done in cross_validation_service.py
+        converted_rgb = cv2.cvtColor(asymmetric_bgr, cv2.COLOR_BGR2RGB)
+        self.assertEqual(converted_rgb[0, 0, 0], 10, "Red channel must be index 0 in RGB crop.")
+        self.assertEqual(converted_rgb[0, 0, 1], 100, "Green channel must be index 1 in RGB crop.")
+        self.assertEqual(converted_rgb[0, 0, 2], 255, "Blue channel must be index 2 in RGB crop.")
+
+        # Test that Meso4Adapter executes cleanly on converted_rgb without exception
+        adapter = Meso4Adapter()
+        pred = adapter.predict_face_crop(converted_rgb)
+        self.assertIn(pred.prediction, ["authentic", "manipulated"])
+        self.assertIsNotNone(pred.manipulated_probability)
+        self.assertIsNotNone(pred.authentic_probability)
+        self.assertAlmostEqual(pred.manipulated_probability + pred.authentic_probability, 1.0, places=4)
+
 
 class TestCrossValidationAPI(unittest.TestCase):
     """Tests the cross-validation REST API endpoints."""

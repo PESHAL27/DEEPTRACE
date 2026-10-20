@@ -1,0 +1,747 @@
+{
+  "pad_0.10": {
+    "padding": 0.1,
+    "samples": [
+      {
+        "id": "known_real.jpg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.631,
+        "face_count": 2,
+        "primary_face_crop_shape": [
+          329,
+          228,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 498,
+          "y": 155,
+          "width": 190,
+          "height": 275
+        },
+        "primary_face_real_prob": 0.7274,
+        "primary_face_fake_prob": 0.2726,
+        "primary_face_logits": [
+          0.4864,
+          -0.495
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "Nithin_sist_friend.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.8029,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          288,
+          231,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 447,
+          "y": 248,
+          "width": 193,
+          "height": 240
+        },
+        "primary_face_real_prob": 0.8029,
+        "primary_face_fake_prob": 0.1971,
+        "primary_face_logits": [
+          0.7058,
+          -0.699
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "MY_PHOTO.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.6174,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          639,
+          493,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 394,
+          "y": 418,
+          "width": 411,
+          "height": 533
+        },
+        "primary_face_real_prob": 0.6174,
+        "primary_face_fake_prob": 0.3826,
+        "primary_face_logits": [
+          0.2322,
+          -0.2463
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "known_fake.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.8356,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          298,
+          234,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 60,
+          "y": 44,
+          "width": 196,
+          "height": 251
+        },
+        "primary_face_real_prob": 0.1644,
+        "primary_face_fake_prob": 0.8356,
+        "primary_face_logits": [
+          -0.8156,
+          0.8104
+        ],
+        "outcome": "TP"
+      },
+      {
+        "id": "all_in_one.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.9945,
+        "face_count": 50,
+        "primary_face_crop_shape": [
+          260,
+          234,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 1059,
+          "y": 0,
+          "width": 196,
+          "height": 237
+        },
+        "primary_face_real_prob": 0.1346,
+        "primary_face_fake_prob": 0.8654,
+        "primary_face_logits": [
+          -0.9321,
+          0.9286
+        ],
+        "outcome": "TP"
+      }
+    ],
+    "metrics": {
+      "total": 5,
+      "tp": 2,
+      "fp": 0,
+      "tn": 3,
+      "fn": 0,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "specificity": 1.0,
+      "f1": 1.0,
+      "fpr": 0.0,
+      "fnr": 0.0
+    }
+  },
+  "pad_0.15": {
+    "padding": 0.15,
+    "samples": [
+      {
+        "id": "known_real.jpg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.6246,
+        "face_count": 2,
+        "primary_face_crop_shape": [
+          357,
+          246,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 498,
+          "y": 155,
+          "width": 190,
+          "height": 275
+        },
+        "primary_face_real_prob": 0.7182,
+        "primary_face_fake_prob": 0.2818,
+        "primary_face_logits": [
+          0.4632,
+          -0.4721
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "Nithin_sist_friend.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.5259,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          312,
+          249,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 447,
+          "y": 248,
+          "width": 193,
+          "height": 240
+        },
+        "primary_face_real_prob": 0.4741,
+        "primary_face_fake_prob": 0.5259,
+        "primary_face_logits": [
+          -0.0546,
+          0.0489
+        ],
+        "outcome": "FP"
+      },
+      {
+        "id": "MY_PHOTO.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.5583,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          691,
+          533,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 394,
+          "y": 418,
+          "width": 411,
+          "height": 533
+        },
+        "primary_face_real_prob": 0.5583,
+        "primary_face_fake_prob": 0.4417,
+        "primary_face_logits": [
+          0.1087,
+          -0.1256
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "known_fake.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.8133,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          310,
+          254,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 60,
+          "y": 44,
+          "width": 196,
+          "height": 251
+        },
+        "primary_face_real_prob": 0.1867,
+        "primary_face_fake_prob": 0.8133,
+        "primary_face_logits": [
+          -0.7388,
+          0.7325
+        ],
+        "outcome": "TP"
+      },
+      {
+        "id": "all_in_one.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.9974,
+        "face_count": 50,
+        "primary_face_crop_shape": [
+          272,
+          254,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 1059,
+          "y": 0,
+          "width": 196,
+          "height": 237
+        },
+        "primary_face_real_prob": 0.2827,
+        "primary_face_fake_prob": 0.7173,
+        "primary_face_logits": [
+          -0.4708,
+          0.4605
+        ],
+        "outcome": "TP"
+      }
+    ],
+    "metrics": {
+      "total": 5,
+      "tp": 2,
+      "fp": 1,
+      "tn": 2,
+      "fn": 0,
+      "accuracy": 0.8,
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "specificity": 0.6666666666666666,
+      "f1": 0.8,
+      "fpr": 0.3333333333333333,
+      "fnr": 0.0
+    }
+  },
+  "pad_0.20": {
+    "padding": 0.2,
+    "samples": [
+      {
+        "id": "known_real.jpg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.6863,
+        "face_count": 2,
+        "primary_face_crop_shape": [
+          385,
+          266,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 498,
+          "y": 155,
+          "width": 190,
+          "height": 275
+        },
+        "primary_face_real_prob": 0.8692,
+        "primary_face_fake_prob": 0.1308,
+        "primary_face_logits": [
+          0.9482,
+          -0.9457
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "Nithin_sist_friend.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.6925,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          336,
+          269,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 447,
+          "y": 248,
+          "width": 193,
+          "height": 240
+        },
+        "primary_face_real_prob": 0.6925,
+        "primary_face_fake_prob": 0.3075,
+        "primary_face_logits": [
+          0.4045,
+          -0.4074
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "MY_PHOTO.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.5905,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          745,
+          575,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 394,
+          "y": 418,
+          "width": 411,
+          "height": 533
+        },
+        "primary_face_real_prob": 0.5905,
+        "primary_face_fake_prob": 0.4095,
+        "primary_face_logits": [
+          0.1752,
+          -0.1907
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "known_fake.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.8766,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          317,
+          274,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 60,
+          "y": 44,
+          "width": 196,
+          "height": 251
+        },
+        "primary_face_real_prob": 0.1234,
+        "primary_face_fake_prob": 0.8766,
+        "primary_face_logits": [
+          -0.9818,
+          0.9791
+        ],
+        "outcome": "TP"
+      },
+      {
+        "id": "all_in_one.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.9988,
+        "face_count": 50,
+        "primary_face_crop_shape": [
+          284,
+          274,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 1059,
+          "y": 0,
+          "width": 196,
+          "height": 237
+        },
+        "primary_face_real_prob": 0.124,
+        "primary_face_fake_prob": 0.876,
+        "primary_face_logits": [
+          -0.9789,
+          0.9764
+        ],
+        "outcome": "TP"
+      }
+    ],
+    "metrics": {
+      "total": 5,
+      "tp": 2,
+      "fp": 0,
+      "tn": 3,
+      "fn": 0,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "specificity": 1.0,
+      "f1": 1.0,
+      "fpr": 0.0,
+      "fnr": 0.0
+    }
+  },
+  "pad_0.25": {
+    "padding": 0.25,
+    "samples": [
+      {
+        "id": "known_real.jpg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.6541,
+        "face_count": 2,
+        "primary_face_crop_shape": [
+          411,
+          284,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 498,
+          "y": 155,
+          "width": 190,
+          "height": 275
+        },
+        "primary_face_real_prob": 0.8003,
+        "primary_face_fake_prob": 0.1997,
+        "primary_face_logits": [
+          0.6923,
+          -0.696
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "Nithin_sist_friend.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.7348,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          360,
+          289,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 447,
+          "y": 248,
+          "width": 193,
+          "height": 240
+        },
+        "primary_face_real_prob": 0.7348,
+        "primary_face_fake_prob": 0.2652,
+        "primary_face_logits": [
+          0.509,
+          -0.5103
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "MY_PHOTO.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.6154,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          799,
+          615,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 394,
+          "y": 418,
+          "width": 411,
+          "height": 533
+        },
+        "primary_face_real_prob": 0.6154,
+        "primary_face_fake_prob": 0.3846,
+        "primary_face_logits": [
+          0.2282,
+          -0.242
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "known_fake.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.7882,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          317,
+          294,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 60,
+          "y": 44,
+          "width": 196,
+          "height": 251
+        },
+        "primary_face_real_prob": 0.2118,
+        "primary_face_fake_prob": 0.7882,
+        "primary_face_logits": [
+          -0.6608,
+          0.6533
+        ],
+        "outcome": "TP"
+      },
+      {
+        "id": "all_in_one.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.998,
+        "face_count": 50,
+        "primary_face_crop_shape": [
+          296,
+          294,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 1059,
+          "y": 0,
+          "width": 196,
+          "height": 237
+        },
+        "primary_face_real_prob": 0.1952,
+        "primary_face_fake_prob": 0.8048,
+        "primary_face_logits": [
+          -0.7115,
+          0.705
+        ],
+        "outcome": "TP"
+      }
+    ],
+    "metrics": {
+      "total": 5,
+      "tp": 2,
+      "fp": 0,
+      "tn": 3,
+      "fn": 0,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "specificity": 1.0,
+      "f1": 1.0,
+      "fpr": 0.0,
+      "fnr": 0.0
+    }
+  },
+  "pad_0.30": {
+    "padding": 0.3,
+    "samples": [
+      {
+        "id": "known_real.jpg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.6238,
+        "face_count": 2,
+        "primary_face_crop_shape": [
+          439,
+          304,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 498,
+          "y": 155,
+          "width": 190,
+          "height": 275
+        },
+        "primary_face_real_prob": 0.7472,
+        "primary_face_fake_prob": 0.2528,
+        "primary_face_logits": [
+          0.5381,
+          -0.5454
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "Nithin_sist_friend.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.5866,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          384,
+          307,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 447,
+          "y": 248,
+          "width": 193,
+          "height": 240
+        },
+        "primary_face_real_prob": 0.5866,
+        "primary_face_fake_prob": 0.4134,
+        "primary_face_logits": [
+          0.1703,
+          -0.1797
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "MY_PHOTO.jpeg",
+        "ground_truth": "authentic",
+        "prediction": "real",
+        "assessment": "Likely authentic",
+        "model_probability": 0.6016,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          851,
+          657,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 394,
+          "y": 418,
+          "width": 411,
+          "height": 533
+        },
+        "primary_face_real_prob": 0.6016,
+        "primary_face_fake_prob": 0.3984,
+        "primary_face_logits": [
+          0.199,
+          -0.2132
+        ],
+        "outcome": "TN"
+      },
+      {
+        "id": "known_fake.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.8502,
+        "face_count": 1,
+        "primary_face_crop_shape": [
+          317,
+          312,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 60,
+          "y": 44,
+          "width": 196,
+          "height": 251
+        },
+        "primary_face_real_prob": 0.1498,
+        "primary_face_fake_prob": 0.8502,
+        "primary_face_logits": [
+          -0.8702,
+          0.8662
+        ],
+        "outcome": "TP"
+      },
+      {
+        "id": "all_in_one.jpg",
+        "ground_truth": "manipulated",
+        "prediction": "fake",
+        "assessment": "Likely manipulated",
+        "model_probability": 0.9966,
+        "face_count": 50,
+        "primary_face_crop_shape": [
+          308,
+          312,
+          3
+        ],
+        "primary_face_bbox": {
+          "x": 1059,
+          "y": 0,
+          "width": 196,
+          "height": 237
+        },
+        "primary_face_real_prob": 0.1308,
+        "primary_face_fake_prob": 0.8692,
+        "primary_face_logits": [
+          -0.9486,
+          0.9453
+        ],
+        "outcome": "TP"
+      }
+    ],
+    "metrics": {
+      "total": 5,
+      "tp": 2,
+      "fp": 0,
+      "tn": 3,
+      "fn": 0,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "specificity": 1.0,
+      "f1": 1.0,
+      "fpr": 0.0,
+      "fnr": 0.0
+    }
+  }
+}

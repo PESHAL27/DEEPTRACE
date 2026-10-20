@@ -49,6 +49,7 @@ class PrimaryDetectorFindings(BaseModel):
     verdict: str  # 'LIKELY MANIPULATED', 'REAL', 'NO FACE DETECTED', 'INCONCLUSIVE'
     model_probability: Optional[float] = None
     manipulated_class_softmax_probability: Optional[float] = None
+    authentic_class_softmax_probability: Optional[float] = None
     raw_probability: Optional[float] = None
     confidence_score: float = 0.0
     classification_threshold: float = 0.50

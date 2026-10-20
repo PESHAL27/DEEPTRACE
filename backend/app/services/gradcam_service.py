@@ -138,6 +138,20 @@ class XceptionGradCAM:
                 self.gradients = None
 
 
+_gradcam_engine: Optional["XceptionGradCAM"] = None
+
+
+def get_gradcam_engine() -> "XceptionGradCAM":
+    """
+    Returns the cached singleton instance of XceptionGradCAM.
+    Hooks and activations are cleaned up deterministically in generate_cam finally block.
+    """
+    global _gradcam_engine
+    if _gradcam_engine is None:
+        _gradcam_engine = XceptionGradCAM()
+    return _gradcam_engine
+
+
 def generate_gradcam_for_face(
     face_crop_bgr: np.ndarray,
     identifier_prefix: str,
@@ -157,7 +171,7 @@ def generate_gradcam_for_face(
     """
     try:
         HEATMAPS_DIR.mkdir(parents=True, exist_ok=True)
-        gradcam = XceptionGradCAM()
+        gradcam = get_gradcam_engine()
 
         overlay_bgr, heatmap_bgr = gradcam.generate_cam(
             face_crop_bgr,

@@ -169,11 +169,12 @@ async def analyze_media(file: UploadFile = File(...)):
     # 8. Forensic Pipeline Execution (Metadata, Faces, Model Inference)
     try:
         metadata_analysis = analyze_metadata(target_path, media_type)
-        face_result = detect_faces(target_path, media_type)
-
         if media_type == "image":
-            detection_result = analyze_image(target_path)
+            face_result = detect_faces(target_path, media_type)
+            detection_info = getattr(face_result, "_detection_info", None)
+            detection_result = analyze_image(target_path, detection_info=detection_info)
         else:
+            face_result = None
             detection_result = analyze_video(target_path)
 
         # Attach metadata analysis to detection result
@@ -203,7 +204,7 @@ async def analyze_media(file: UploadFile = File(...)):
             rep_boxes = [f.bounding_box for f in (detection_result.frame_results or []) if f.face_detected and f.bounding_box]
             face_result = FaceDetectionResult(
                 status="completed",
-                faces=rep_boxes[:faces_count] if rep_boxes else (face_result.faces or []),
+                faces=rep_boxes[:faces_count] if rep_boxes else (face_result.faces if face_result and face_result.faces else []),
                 count=faces_count
             )
 
@@ -211,6 +212,7 @@ async def analyze_media(file: UploadFile = File(...)):
         analysis_id=analysis_id,
         filename=safe_name,
         media_type=media_type,
+        media_url=f"/uploads/{target_filename}",
         file_size=metadata.file_size,
         file_size_human=metadata.file_size_human,
         status=detection_result.status,
@@ -224,8 +226,17 @@ async def analyze_media(file: UploadFile = File(...)):
         detection_probability=detection_result.detection_probability,
         model_probability=detection_result.model_probability,
         video_probability=detection_result.video_probability,
+        real_probability=detection_result.real_probability,
+        fake_probability=detection_result.fake_probability,
         assessment=detection_result.assessment,
         faces=detection_result.faces,
+        selected_face_id=detection_result.selected_face_id,
+        analysis_mode=detection_result.analysis_mode or "primary_face",
+        primary_face_result=detection_result.primary_face_result,
+        all_faces_result=detection_result.all_faces_result,
+        is_low_margin=detection_result.is_low_margin,
+        margin_note=detection_result.margin_note,
+        task_scope_note=detection_result.task_scope_note,
         frame_results=detection_result.frame_results,
         frames_analyzed=detection_result.frames_analyzed,
         duration=detection_result.duration or metadata.duration,

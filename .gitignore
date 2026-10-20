@@ -57,7 +57,20 @@ backend/uploads/heatmaps/*
 backend/uploads/forensics/frequency/*
 backend/uploads/reports/*
 backend/results/*
+backend/evaluation/results/benchmark_BENCH-*.json
 !backend/uploads/.gitkeep
 !backend/results/.gitkeep
+!backend/evaluation/results/.gitkeep
 !**/.gitkeep
+
+# Scratch and temporary testing artifacts
+scratch/
+backend/evaluation/temp_crop*
+backend/evaluation/temp_crops/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
 

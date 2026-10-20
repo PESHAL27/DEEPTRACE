@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Play, 
   Pause, 
   Volume2, 
+  VolumeX,
   Settings as SettingsIcon, 
   Maximize, 
   AlertTriangle, 
@@ -18,7 +19,8 @@ import {
   RotateCw,
   Activity,
   TrendingUp,
-  Zap
+  Zap,
+  ShieldAlert
 } from 'lucide-react';
 import type { Analysis, SuspiciousFrame, ImageCrossValidationData, VideoCrossValidationData } from '../../types/forensics';
 import { forensicApiService } from '../../services/api';
@@ -49,10 +51,46 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
     );
   }
 
-  // Video player simulation state
+  // Real HTML5 Video element ref
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Parse initial duration in seconds from analysis.duration (e.g. "00:33" or "33.46")
+  const initialDurationSec = (() => {
+    if (analysis.duration) {
+      const parts = analysis.duration.split(':').map(Number);
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        return parts[0] * 60 + parts[1];
+      }
+      const num = parseFloat(analysis.duration);
+      if (!isNaN(num) && num > 0) return num;
+    }
+    return 0;
+  })();
+
+  const [durationSec, setDurationSec] = useState<number>(initialDurationSec);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTimeSec, setCurrentTimeSec] = useState(0.0);
+  const [isMuted, setIsMuted] = useState(false);
   const [selectedFrame, setSelectedFrame] = useState<SuspiciousFrame | null>(null);
+  const [analysisMode, setAnalysisMode] = useState<'primary_face' | 'all_faces'>(analysis.analysisMode || 'primary_face');
+  const defaultFaceId = analysis.selectedFaceId
+    || (analysis.faceBoundingBoxes && analysis.faceBoundingBoxes.length > 0
+        ? (analysis.faceBoundingBoxes.find(b => b.isPrimary)?.faceId || analysis.faceBoundingBoxes[0].faceId || 'face_0')
+        : 'face_0');
+  const [selectedFaceId, setSelectedFaceId] = useState<string>(defaultFaceId);
+
+  useEffect(() => {
+    if (analysis.selectedFaceId) {
+      setSelectedFaceId(analysis.selectedFaceId);
+    } else if (analysis.faceBoundingBoxes && analysis.faceBoundingBoxes.length > 0) {
+      const primary = analysis.faceBoundingBoxes.find(b => b.isPrimary) || analysis.faceBoundingBoxes[0];
+      setSelectedFaceId(primary.faceId || `face_${primary.faceIndex ?? 0}`);
+    }
+    if (analysis.analysisMode) {
+      setAnalysisMode(analysis.analysisMode);
+    }
+  }, [analysis]);
+
   const [activeTab, setActiveTab] = useState<'heatmap' | 'frequency' | 'metadata' | 'comparison' | 'temporal'>('heatmap');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [crossValData, setCrossValData] = useState<ImageCrossValidationData | VideoCrossValidationData | null>(analysis.crossValidation || null);
@@ -83,36 +121,83 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
     }
   };
 
-  const durationSec = 12.0;
-
-  // Video playback loop
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTimeSec((prev) => {
-          if (prev >= durationSec) {
-            setIsPlaying(false);
-            return 0;
-          }
-          return +(prev + 0.1).toFixed(1);
-        });
-      }, 100);
+  // Video playback event handlers bound directly to HTML5 video element
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTimeSec(videoRef.current.currentTime);
     }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
+  };
 
-  // Format seconds into MM:SS.S
+  const handleLoadedMetadata = () => {
+    if (videoRef.current && videoRef.current.duration && !isNaN(videoRef.current.duration) && isFinite(videoRef.current.duration)) {
+      setDurationSec(videoRef.current.duration);
+    }
+  };
+
+  const handleDurationChange = () => {
+    if (videoRef.current && videoRef.current.duration && !isNaN(videoRef.current.duration) && isFinite(videoRef.current.duration)) {
+      setDurationSec(videoRef.current.duration);
+    }
+  };
+
+  const handleVideoEnded = () => {
+    setIsPlaying(false);
+    setCurrentTimeSec(0);
+  };
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused || video.ended) {
+      video.play().catch((err) => {
+        console.warn("Video play interrupted:", err);
+      });
+    } else {
+      video.pause();
+    }
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  };
+
+  const toggleFullscreen = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      video.requestFullscreen().catch(() => {});
+    }
+  };
+
+  // Format seconds into MM:SS
   const formatTime = (sec: number) => {
-    const secs = (sec % 60).toFixed(0).padStart(2, '0');
-    return `00:${secs}`;
+    if (isNaN(sec) || !isFinite(sec) || sec < 0) return '00:00';
+    const mins = Math.floor(sec / 60);
+    const secs = Math.floor(sec % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleScrubberClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!videoRef.current || durationSec <= 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-    setCurrentTimeSec(+(ratio * durationSec).toFixed(1));
+    const targetTime = +(ratio * durationSec).toFixed(2);
+    videoRef.current.currentTime = targetTime;
+    setCurrentTimeSec(targetTime);
+  };
+
+  const handleSelectFrame = (frame: SuspiciousFrame) => {
+    setSelectedFrame(frame);
+    if (videoRef.current) {
+      videoRef.current.currentTime = frame.seconds;
+    }
+    setCurrentTimeSec(frame.seconds);
   };
 
   const handleDownloadEvidence = () => {
@@ -141,20 +226,58 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
 
   const isNoFace = analysis.facesDetected === 0 || analysis.prediction === 'NO FACE DETECTED';
   const isModelNotLoaded = !isNoFace && (analysis.model === 'Model Not Loaded' || analysis.prediction === 'INCONCLUSIVE');
-  const isManipulated = !isNoFace && analysis.prediction === 'LIKELY MANIPULATED';
-  const scrubberPercent = ((currentTimeSec / durationSec) * 100).toFixed(1);
 
   const allFaceBoxes = analysis.faceBoundingBoxes && analysis.faceBoundingBoxes.length > 0
     ? analysis.faceBoundingBoxes
     : analysis.faceBoundingBox ? [analysis.faceBoundingBox] : [];
+
+  const selectedFaceBox = allFaceBoxes.find(
+    (b) => b.faceId === selectedFaceId || `face_${b.faceIndex}` === selectedFaceId
+  ) || (allFaceBoxes.length > 0 ? allFaceBoxes[0] : null);
+
+  let displayedPrediction: string = analysis.prediction;
+  let displayedScore: number = analysis.confidenceScore;
+  let displayedMarginNote: string | undefined = undefined;
+
+  if (analysis.mediaType === 'image' && !isNoFace && !isModelNotLoaded) {
+    if (analysisMode === 'primary_face' && selectedFaceBox) {
+      const isFake = selectedFaceBox.prediction?.toLowerCase() === 'fake';
+      displayedPrediction = isFake ? 'LIKELY MANIPULATED' : 'REAL';
+      displayedScore = selectedFaceBox.probability !== undefined 
+        ? +(selectedFaceBox.probability * 100).toFixed(1) 
+        : analysis.confidenceScore;
+      if (selectedFaceBox.fakeProbability !== undefined && Math.abs(selectedFaceBox.fakeProbability - 0.50) < 0.10) {
+        displayedMarginNote = `Low-margin model prediction (${displayedScore}% ${displayedPrediction}, near 50% decision boundary)`;
+      }
+    } else if (analysisMode === 'all_faces' && analysis.allFacesResult) {
+      const isFake = analysis.allFacesResult.prediction.toLowerCase() === 'fake';
+      displayedPrediction = isFake ? 'LIKELY MANIPULATED' : 'REAL';
+      displayedScore = +(analysis.allFacesResult.probability * 100).toFixed(1);
+      displayedMarginNote = `Aggregation: Unweighted mean of ${analysis.allFacesResult.faceCount} localized face(s)`;
+    }
+  }
+
+  const isCurrentManipulated = !isNoFace && displayedPrediction === 'LIKELY MANIPULATED';
+
+  const scrubberPercent = durationSec > 0
+    ? Math.min(100, Math.max(0, (currentTimeSec / durationSec) * 100)).toFixed(1)
+    : '0';
 
   const activeBoxes = selectedFrame?.boundingBox
     ? [selectedFrame.boundingBox]
     : allFaceBoxes;
 
   const currentPreviewUrl = selectedFrame?.thumbnailUrl || analysis.mediaUrl || '/assets/sample_frame.jpg';
-  const currentOverlayUrl = selectedFrame?.gradcamOverlayUrl || analysis.gradcamOverlayUrl || analysis.heatmapUrl;
-  const currentCropUrl = selectedFrame?.originalFaceCropUrl || analysis.originalFaceCropUrl || selectedFrame?.thumbnailUrl || analysis.mediaUrl || '/assets/sample_frame.jpg';
+  const currentOverlayUrl = selectedFrame?.gradcamOverlayUrl 
+    || (analysis.mediaType === 'image' && selectedFaceBox?.gradcamOverlayUrl) 
+    || analysis.gradcamOverlayUrl 
+    || analysis.heatmapUrl;
+  const currentCropUrl = selectedFrame?.originalFaceCropUrl 
+    || (analysis.mediaType === 'image' && selectedFaceBox?.originalFaceCropUrl) 
+    || analysis.originalFaceCropUrl 
+    || selectedFrame?.thumbnailUrl 
+    || analysis.mediaUrl 
+    || '/assets/sample_frame.jpg';
   const currentFreqUrl = selectedFrame?.frequencySpectrumUrl || analysis.frequencyAnalysis?.frequencySpectrumUrl;
   const currentFreqAnalysis = selectedFrame?.frequencyAnalysis || analysis.frequencyAnalysis;
   const currentMetadata = analysis.metadataAnalysis;
@@ -189,36 +312,80 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
         <div className="media-preview-card">
           <div className="media-viewport">
             <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%' }}>
-              <img 
-                src={currentPreviewUrl} 
-                alt="Forensic Evidence Preview" 
-                className="media-main-image"
-                style={{ maxWidth: '100%', maxHeight: '360px', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
-              />
+              {analysis.mediaType === 'video' ? (
+                <video 
+                  ref={videoRef}
+                  src={analysis.mediaUrl}
+                  className="media-main-video"
+                  style={{ maxWidth: '100%', maxHeight: '360px', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
+                  playsInline
+                  preload="metadata"
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onDurationChange={handleDurationChange}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={handleVideoEnded}
+                />
+              ) : (
+                <img 
+                  src={currentPreviewUrl} 
+                  alt="Forensic Evidence Preview" 
+                  className="media-main-image"
+                  style={{ maxWidth: '100%', maxHeight: '360px', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
+                />
+              )}
 
               {/* Overlaid Face Bounding Box(es) */}
               {activeBoxes.map((box, idx) => {
+                const isSelected = analysis.mediaType === 'image' && (
+                  box.faceId === selectedFaceId || 
+                  (selectedFaceBox && box.faceIndex === selectedFaceBox.faceIndex) ||
+                  (activeBoxes.length === 1)
+                );
                 const isFakeBox = box.prediction?.toLowerCase() === 'fake';
                 const boxColor = isFakeBox ? '#ef4444' : '#10b981';
+                const tagLabel = box.isPrimary 
+                  ? `★ PRIMARY: ${box.label}` 
+                  : box.label;
+
                 return (
                   <div 
-                    key={idx}
-                    className="face-bounding-box"
+                    key={box.faceId || idx}
+                    className={`face-bounding-box ${isSelected ? 'face-box-selected' : ''}`}
+                    onClick={() => {
+                      if (analysis.mediaType === 'image' && (box.faceId || box.faceIndex !== undefined)) {
+                        setSelectedFaceId(box.faceId || `face_${box.faceIndex}`);
+                        setAnalysisMode('primary_face');
+                      }
+                    }}
                     style={{
                       top: `${box.top}%`,
                       left: `${box.left}%`,
                       width: `${box.width}%`,
                       height: `${box.height}%`,
                       borderColor: boxColor,
-                      boxShadow: `0 0 10px ${isFakeBox ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+                      borderWidth: isSelected ? '3px' : '2px',
+                      borderStyle: isSelected ? 'solid' : 'dashed',
+                      boxShadow: isSelected 
+                        ? `0 0 14px ${isFakeBox ? 'rgba(239, 68, 68, 0.6)' : 'rgba(16, 185, 129, 0.6)'}` 
+                        : `0 0 6px ${isFakeBox ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                      opacity: (!isSelected && activeBoxes.length > 1) ? 0.75 : 1.0,
+                      cursor: analysis.mediaType === 'image' ? 'pointer' : 'default',
+                      zIndex: isSelected ? 10 : 5
                     }}
+                    title={analysis.mediaType === 'image' ? `Click to inspect Face #${(box.faceIndex ?? 0) + 1}` : undefined}
                   >
                     <span 
                       className="face-detected-tag"
-                      style={{ backgroundColor: boxColor }}
+                      style={{ 
+                        backgroundColor: boxColor,
+                        fontWeight: isSelected ? 700 : 500,
+                        fontSize: isSelected ? '10px' : '9px'
+                      }}
                     >
                       <Scan size={10} />
-                      <span>{box.label}</span>
+                      <span>{tagLabel}</span>
                     </span>
                     <span 
                       className="bounding-box-corner-marker" 
@@ -235,14 +402,14 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
             <div className="media-controls-bar">
               <button 
                 className="control-btn" 
-                onClick={() => setIsPlaying(!isPlaying)}
+                onClick={togglePlay}
                 title={isPlaying ? 'Pause' : 'Play'}
               >
                 {isPlaying ? <Pause size={14} fill="#fff" /> : <Play size={14} fill="#fff" />}
               </button>
 
               <div className="time-display">
-                {formatTime(currentTimeSec)} / {analysis.duration || '00:12'}
+                {formatTime(currentTimeSec)} / {formatTime(durationSec)}
               </div>
 
               <div className="scrubber-track" onClick={handleScrubberClick}>
@@ -256,62 +423,166 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                 />
               </div>
 
-              <button className="control-btn" title="Audio">
-                <Volume2 size={14} />
+              <button className="control-btn" onClick={toggleMute} title={isMuted ? 'Unmute' : 'Mute'}>
+                {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
               </button>
               <button className="control-btn" title="Settings">
                 <SettingsIcon size={14} />
               </button>
-              <button className="control-btn" title="Fullscreen">
+              <button className="control-btn" onClick={toggleFullscreen} title="Fullscreen">
                 <Maximize size={14} />
               </button>
             </div>
           )}
         </div>
 
-        {/* 2. Suspicious Frames Panel */}
+        {/* 2. Detected Faces (Image) or Suspicious Frames (Video) Panel */}
         <div className="suspicious-frames-card">
-          <div className="suspicious-header">
-            <span>Suspicious Frames</span>
-            <span className="suspicious-count">({analysis.suspiciousFrames?.length ?? 0})</span>
-          </div>
-
-          <div className="frames-list">
-            {analysis.mediaType === 'image' ? (
-              <div style={{ color: 'var(--text-muted)', fontSize: '11.5px', padding: '28px 8px', textAlign: 'center' }}>
-                Not available for this analysis
-              </div>
-            ) : (analysis.suspiciousFrames?.length ?? 0) === 0 ? (
-              <div style={{ color: 'var(--text-muted)', fontSize: '11.5px', padding: '28px 8px', textAlign: 'center' }}>
-                {isNoFace ? 'No face detected in video' : 'No suspicious frames detected'}
-              </div>
-            ) : (
-              analysis.suspiciousFrames.map((frame) => (
-                <div 
-                  key={frame.id}
-                  className={`frame-item ${selectedFrame?.id === frame.id ? 'frame-active' : ''}`}
-                  onClick={() => {
-                    setSelectedFrame(frame);
-                    setCurrentTimeSec(frame.seconds);
-                  }}
-                  title={`Click to inspect frame at ${frame.timestamp}`}
-                >
-                  <div className="frame-thumb-box">
-                    <img src={frame.thumbnailUrl} alt={`Frame ${frame.timestamp}`} className="frame-thumb-img" />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, marginLeft: 8 }}>
-                    <span className="frame-timestamp-badge">{frame.timestamp}</span>
-                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
-                      Prob: {(frame.confidence * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <span className="badge badge-high" style={{ fontSize: '9px', padding: '2px 5px' }}>
-                    FAKE
+          {analysis.mediaType === 'video' ? (
+            <>
+              <div className="suspicious-header">
+                <span>Suspicious Frames</span>
+                <span className="suspicious-count">({analysis.suspiciousFrames?.length ?? 0})</span>
+                {analysis.framesAnalyzed && (
+                  <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                    {analysis.framesAnalyzed} analyzed
                   </span>
+                )}
+              </div>
+
+              <div className="frames-list">
+                {(analysis.suspiciousFrames?.length ?? 0) === 0 ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '11.5px', padding: '28px 8px', textAlign: 'center' }}>
+                    {isNoFace ? 'No face detected in video' : 'No suspicious frames detected'}
+                  </div>
+                ) : (
+                  analysis.suspiciousFrames.map((frame) => (
+                    <div 
+                      key={frame.id}
+                      className={`frame-item ${selectedFrame?.id === frame.id ? 'frame-active' : ''}`}
+                      onClick={() => handleSelectFrame(frame)}
+                      title={`Click to seek and inspect frame at ${frame.timestamp}`}
+                    >
+                      <div className="frame-thumb-box">
+                        <img src={frame.thumbnailUrl} alt={`Frame ${frame.timestamp}`} className="frame-thumb-img" />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, marginLeft: 8 }}>
+                        <span className="frame-timestamp-badge">{frame.timestamp}</span>
+                        <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                          Prob: {(frame.confidence * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <span className="badge badge-high" style={{ fontSize: '9px', padding: '2px 5px' }}>
+                        FAKE
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="suspicious-header" style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <span>Detected Faces</span>
+                  <span className="suspicious-count">({allFaceBoxes.length})</span>
                 </div>
-              ))
-            )}
-          </div>
+                {/* Mode Selector */}
+                {allFaceBoxes.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, width: '100%', background: 'var(--bg-app)', padding: 3, borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setAnalysisMode('primary_face')}
+                      style={{
+                        flex: 1,
+                        padding: '4px 6px',
+                        fontSize: '10.5px',
+                        fontWeight: analysisMode === 'primary_face' ? 600 : 400,
+                        backgroundColor: analysisMode === 'primary_face' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                        color: analysisMode === 'primary_face' ? '#38bdf8' : 'var(--text-muted)',
+                        border: 'none',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      Primary Face
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAnalysisMode('all_faces')}
+                      style={{
+                        flex: 1,
+                        padding: '4px 6px',
+                        fontSize: '10.5px',
+                        fontWeight: analysisMode === 'all_faces' ? 600 : 400,
+                        backgroundColor: analysisMode === 'all_faces' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                        color: analysisMode === 'all_faces' ? '#38bdf8' : 'var(--text-muted)',
+                        border: 'none',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      All Faces
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="frames-list">
+                {allFaceBoxes.length === 0 ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '11.5px', padding: '28px 8px', textAlign: 'center' }}>
+                    No face detected in image
+                  </div>
+                ) : (
+                  allFaceBoxes.map((box, idx) => {
+                    const isSelected = (box.faceId === selectedFaceId) || (selectedFaceBox && box.faceIndex === selectedFaceBox.faceIndex);
+                    const isFake = box.prediction?.toLowerCase() === 'fake';
+                    const prob = box.probability !== undefined ? +(box.probability * 100).toFixed(1) : 0;
+                    const cropThumb = box.originalFaceCropUrl || analysis.mediaUrl;
+
+                    return (
+                      <div 
+                        key={box.faceId || idx}
+                        className={`frame-item ${isSelected ? 'frame-active' : ''}`}
+                        onClick={() => {
+                          if (box.faceId || box.faceIndex !== undefined) {
+                            setSelectedFaceId(box.faceId || `face_${box.faceIndex}`);
+                            setAnalysisMode('primary_face');
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                        title={`Click to select and inspect Face #${(box.faceIndex ?? 0) + 1}`}
+                      >
+                        <div className="frame-thumb-box" style={{ width: 44, height: 44, borderRadius: 4, overflow: 'hidden', flexShrink: 0, backgroundColor: '#000' }}>
+                          <img src={cropThumb} alt={`Face ${(box.faceIndex ?? 0) + 1}`} className="frame-thumb-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, marginLeft: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                              Face #{(box.faceIndex ?? 0) + 1}
+                            </span>
+                            {box.isPrimary && (
+                              <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: 3, backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 600 }}>
+                                PRIMARY
+                              </span>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                            {box.relativeArea ? `${box.relativeArea}% area • ` : ''}Prob: {prob}%
+                          </span>
+                        </div>
+                        <span className={`badge ${isFake ? 'badge-high' : 'badge-low'}`} style={{ fontSize: '9px', padding: '2px 5px' }}>
+                          {isFake ? 'FAKE' : 'REAL'}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* 3. Prominent Verdict Card */}
@@ -323,49 +594,67 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                   <Scan size={18} color="#94a3b8" />
                 ) : isModelNotLoaded ? (
                   <AlertTriangle size={18} color="#f59e0b" />
-                ) : isManipulated ? (
+                ) : isCurrentManipulated ? (
                   <AlertTriangle size={18} className="verdict-alert-icon" />
                 ) : (
                   <Scan size={18} color="#10b981" />
                 )}
                 <span 
                   className={`verdict-state-text ${
-                    isNoFace ? 'is-no-face' : isModelNotLoaded ? '' : !isManipulated ? 'is-real' : ''
+                    isNoFace ? 'is-no-face' : isModelNotLoaded ? '' : !isCurrentManipulated ? 'is-real' : ''
                   }`}
                   style={isNoFace ? { color: '#94a3b8', fontSize: '13.5px' } : isModelNotLoaded ? { color: '#f59e0b', fontSize: '13px' } : undefined}
                 >
-                  {isNoFace ? 'NO FACE DETECTED' : isModelNotLoaded ? 'MODEL NOT CONNECTED' : analysis.prediction}
+                  {isNoFace ? 'NO FACE DETECTED' : isModelNotLoaded ? 'MODEL NOT CONNECTED' : displayedPrediction}
                 </span>
               </div>
               <span 
                 className={`badge ${
-                  isNoFace ? 'badge-inconclusive' : isModelNotLoaded ? 'badge-inconclusive' : isManipulated ? 'badge-high' : 'badge-low'
+                  isNoFace ? 'badge-inconclusive' : isModelNotLoaded ? 'badge-inconclusive' : isCurrentManipulated ? 'badge-high' : 'badge-low'
                 }`}
               >
-                {isNoFace ? 'No Face Detected' : isModelNotLoaded ? 'Awaiting Model' : analysis.riskLevel}
+                {isNoFace 
+                  ? 'No Face Detected' 
+                  : isModelNotLoaded 
+                    ? 'Awaiting Model' 
+                    : analysis.mediaType === 'video' 
+                      ? `Video Probability: ${displayedScore}%` 
+                      : analysisMode === 'primary_face' 
+                        ? `Primary Face: ${displayedScore}%` 
+                        : `All Faces Mean: ${displayedScore}%`}
               </span>
             </div>
 
             {/* Model Probability Score Bar */}
             <div className="confidence-section">
               <span className="confidence-label">
-                {analysis.mediaType === 'video' ? 'Video Probability' : 'Model Probability'}
+                {analysis.mediaType === 'video' ? 'Video Probability' : analysisMode === 'primary_face' ? 'Primary Face Probability' : 'All Faces Probability (Mean)'}
               </span>
               <div 
                 className="confidence-score-value"
                 style={isNoFace || isModelNotLoaded ? { fontSize: '18px', color: 'var(--text-muted)' } : undefined}
               >
-                {isNoFace ? 'N/A' : isModelNotLoaded ? 'Awaiting Analysis' : `${analysis.confidenceScore.toFixed(1)}%`}
+                {isNoFace ? 'N/A' : isModelNotLoaded ? 'Awaiting Analysis' : `${displayedScore}%`}
               </div>
               <div className="confidence-progress-track">
                 <div 
-                  className={`confidence-progress-bar ${!isManipulated && !isNoFace ? 'is-real' : ''}`}
+                  className={`confidence-progress-bar ${!isCurrentManipulated && !isNoFace ? 'is-real' : ''}`}
                   style={{ 
-                    width: isNoFace || isModelNotLoaded ? '0%' : `${analysis.confidenceScore}%`,
+                    width: isNoFace || isModelNotLoaded ? '0%' : `${displayedScore}%`,
                     backgroundColor: isNoFace || isModelNotLoaded ? 'var(--text-dim)' : undefined
                   }}
                 />
               </div>
+              {displayedMarginNote && (
+                <div style={{ marginTop: 8, padding: '5px 8px', borderRadius: 4, backgroundColor: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', fontSize: '10.5px', color: '#fbbf24', lineHeight: 1.35 }}>
+                  <span style={{ fontWeight: 600 }}>Advisory:</span> {displayedMarginNote}
+                </div>
+              )}
+              {analysis.mediaType === 'image' && analysisMode === 'all_faces' && (
+                <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 4, backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', fontSize: '10px', color: '#93c5fd', lineHeight: 1.35 }}>
+                  <span style={{ fontWeight: 600 }}>All-Faces Limitation:</span> Each face receives equal weight. Background detections or peripheral faces can influence this aggregate; Primary Face is the default standard for examining the primary subject.
+                </div>
+              )}
             </div>
           </div>
 
@@ -378,6 +667,18 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
               </span>
               <span className="verdict-meta-val">{analysis.mediaType === 'video' ? 'Video' : 'Image'}</span>
             </div>
+
+            {analysis.mediaType === 'image' && (
+              <div className="verdict-meta-row">
+                <span className="verdict-meta-key">
+                  <Layers size={13} />
+                  <span>Analysis Mode</span>
+                </span>
+                <span className="verdict-meta-val" style={{ textTransform: 'capitalize' }}>
+                  {analysisMode === 'primary_face' ? 'Primary Face' : 'All Faces'}
+                </span>
+              </div>
+            )}
 
             <div className="verdict-meta-row">
               <span className="verdict-meta-key">
@@ -414,8 +715,18 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                 <Scan size={13} />
                 <span>Prediction</span>
               </span>
-              <span className="verdict-meta-val" style={{ fontWeight: 600, color: isNoFace ? '#94a3b8' : isManipulated ? '#f87171' : '#34d399' }}>
-                {isNoFace ? 'NO FACE DETECTED' : analysis.prediction}
+              <span className="verdict-meta-val" style={{ fontWeight: 600, color: isNoFace ? '#94a3b8' : isCurrentManipulated ? '#f87171' : '#34d399' }}>
+                {isNoFace ? 'NO FACE DETECTED' : displayedPrediction}
+              </span>
+            </div>
+
+            <div className="verdict-meta-row" style={{ alignItems: 'flex-start', borderTop: '1px solid var(--border-subtle)', paddingTop: 8, marginTop: 4 }}>
+              <span className="verdict-meta-key" style={{ marginTop: 2 }}>
+                <ShieldAlert size={13} color="var(--accent-blue)" />
+                <span>Task Scope</span>
+              </span>
+              <span className="verdict-meta-val" style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.3, textAlign: 'right', maxWidth: '62%' }}>
+                Facial manipulation (face-swaps / reenactments). Not validated for full-scene AI/diffusion generation.
               </span>
             </div>
           </div>
@@ -438,8 +749,8 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
             <div style={{ padding: '8px 12px', backgroundColor: 'var(--bg-app)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Model Prediction</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: isNoFace ? '#94a3b8' : isManipulated ? '#f87171' : '#34d399', marginTop: 2 }}>
-                  {isNoFace ? 'NO FACE DETECTED' : `${analysis.prediction} (${analysis.confidenceScore}%)`}
+                <div style={{ fontSize: '12px', fontWeight: 600, color: isNoFace ? '#94a3b8' : isCurrentManipulated ? '#f87171' : '#34d399', marginTop: 2 }}>
+                  {isNoFace ? 'NO FACE DETECTED' : `${displayedPrediction} (${displayedScore}%)`}
                 </div>
               </div>
               <span className="badge badge-neutral" style={{ fontSize: '9px' }}>Xception CNN</span>
@@ -1436,6 +1747,9 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                               className="btn btn-secondary btn-sm"
                               style={{ fontSize: '10px', padding: '3px 8px', flexShrink: 0 }}
                               onClick={() => {
+                                if (videoRef.current) {
+                                  videoRef.current.currentTime = evt.timestamp;
+                                }
                                 setCurrentTimeSec(evt.timestamp);
                                 const match = analysis.suspiciousFrames?.find(f => Math.abs(f.seconds - evt.timestamp) < 0.25);
                                 if (match) {
@@ -1519,6 +1833,9 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                     key={idx}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', position: 'relative', cursor: 'pointer' }}
                     onClick={() => {
+                      if (videoRef.current) {
+                        videoRef.current.currentTime = point.seconds;
+                      }
                       setCurrentTimeSec(point.seconds);
                       const match = analysis.suspiciousFrames?.find(f => Math.abs(f.seconds - point.seconds) < 0.25);
                       if (match) setSelectedFrame(match);

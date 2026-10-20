@@ -1,0 +1,44 @@
+{
+  "audit_timestamp": "2026-10-20T18:54:00Z",
+  "artifacts_audited": [
+    "evaluation/manifests/external_benchmark_manifest.json",
+    "evaluation/results/external_benchmark_results.json",
+    "evaluation/results/reproduced_benchmark_results.json",
+    "evaluation/results/independent_recalculated_metrics.json",
+    "evaluation/results/sample_level_audit_table.md",
+    "evaluation/independent_metric_recalculation.py",
+    "evaluation/run_external_benchmark.py",
+    "evaluation/GENERALIZATION_ROADMAP.md",
+    "evaluation/datasets/external_benchmark (100 files)"
+  ],
+  "is_internally_consistent": true,
+  "sample_counts": {
+    "disk_files": 100,
+    "manifest_samples": 100,
+    "results_records": 100,
+    "reproduced_records": 100,
+    "recalc_records": 100,
+    "sample_table_rows": 100
+  },
+  "duplicates_detected": {
+    "disk_files": 0,
+    "manifest_sample_ids": 0,
+    "manifest_filenames": 0,
+    "manifest_sha256": 0
+  },
+  "non_standard_filenames": [],
+  "transcript_typo_audit": {
+    "target_pattern": "real_0001.jpg",
+    "correct_pattern": "real_00001.jpg",
+    "found_in_disk_files": false,
+    "found_in_manifest": false,
+    "found_in_results": false,
+    "found_in_reproduced": false,
+    "found_in_recalc": false,
+    "found_in_sample_table_md": false,
+    "explanation": "All disk files, manifest entries, JSON result files, and the saved sample_level_audit_table.md consistently and correctly use the 5-digit zero-padded format 'real_00001.jpg'. The string 'real_0001.jpg' was an abbreviated visual typographical error that appeared solely in an assistant chat transcript excerpt, and never existed in code or artifact storage."
+  },
+  "ordering_verified": true,
+  "total_mismatches": 0,
+  "mismatches": []
+}

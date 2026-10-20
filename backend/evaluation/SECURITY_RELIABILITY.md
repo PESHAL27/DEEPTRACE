@@ -80,40 +80,53 @@ Filenames, case identifiers, report snapshot lookups, and evaluation datasets ar
 
 ---
 
-## 10. Concurrency Safety & Inference Serialization
+## 10. Concurrent Analysis Behavior
 - **Singleton Model Synchronization**: DeepfakeBench Xception and OpenCV YuNet are initialized once at application startup.
-- **Inference Lock (`_inference_lock`)**: PyTorch neural forward passes and Grad-CAM backpropagation hooks are synchronized using a re-entrant `threading.Lock()`.
+- **Inference Lock (`_inference_lock`)**: PyTorch neural forward passes and Grad-CAM backpropagation hooks are synchronized using a thread-safe `threading.Lock()`.
 - **Grad-CAM Hook Isolation**: Grad-CAM attaches forward and backward hooks to `model.backbone.conv4`. Hook registration and gradient calculations execute under `_inference_lock` with guaranteed cleanup in `finally:` blocks (`remove_hooks()`, `zero_grad()`, activations/gradients reset to `None`).
 - **Concurrent Request Isolation**: Concurrent analysis requests operate on isolated memory scopes, unique analysis IDs, and separate artifact file paths without cross-case contamination.
 
 ---
 
-## 11. Model & Hardware Failure Recovery
-- **GPU / CUDA Failures**: If a `torch.cuda.OutOfMemoryError` occurs, the exception is caught, `torch.cuda.empty_cache()` is called, and a sanitized `RuntimeError` is raised.
-- **No False Fallbacks**: A failed neural inference is never converted into an authentic verdict, a zero probability, or a fabricated deepfake score. A failure remains recorded as `status="error"` or `status="failed"`.
+## 11. Model Failure Behavior
+- **Explicit Failure Categorization**: Model inference exceptions (invalid tensor dimensions, unreadable crops, neural runtime errors) return structured failure states with HTTP 500 without exposing stack traces.
+- **No False Fallbacks**: A failed neural inference is never silently converted into an authentic verdict, a zero probability, or a fabricated deepfake score. A failure remains recorded as `status="error"` or `status="failed"`.
 
 ---
 
-## 12. Report Security & HTML Injection Protection
+## 12. GPU Failure Behavior
+- **CUDA OOM Handling**: If a `torch.cuda.OutOfMemoryError` occurs, the exception is caught, `torch.cuda.empty_cache()` is called, and a sanitized `RuntimeError` is raised.
+- **Persistent Corrupted State Prevention**: GPU tensors are detached and discarded, preventing leaked allocations or corrupted CUDA driver states from affecting subsequent inferences.
+- **Device Fallback Design**: If CUDA is not available at startup, the system initializes on CPU without runtime switching during active inference.
+
+---
+
+## 13. Report Security
 - **Printable Report Escaping (`render_printable_report_html`)**: All dynamic case variables (`id`, `caseId`, `filename`, `executive_summary`, `headline`, `details`, EXIF metadata, model details) are sanitized through Python's standard `html.escape()`. Untrusted user data containing `<script>`, `<img>`, quotes, or HTML tags is escaped into standard character entities (`&lt;script&gt;`).
 - **Report Snapshot Protection**: JSON snapshots stored in `uploads/reports/` are loaded via path confinement checks (`is_safe_path()`) ensuring no snapshot lookup can escape the designated reports directory.
 
 ---
 
-## 13. Benchmark & Cross-Validation Confinement
+## 14. Benchmark Security
 - **Path Confinement (`resolve_sample_path`)**: The benchmark harness resolves dataset sample and manifest paths strictly against approved directories (`MANIFESTS_DIR`, `DATASETS_DIR`, `EVALUATION_DIR`, `UPLOADS_DIR`, and `tempfile.gettempdir()`). Attempts to target arbitrary system paths (e.g. `C:\Windows\...` or `/etc/passwd`) raise `PermissionError` and return HTTP 403.
-- **Workload Limits**: Benchmark evaluations are capped at `MAX_BENCHMARK_SAMPLES = 500` samples per request.
-- **Comparison Detector Isolation**: In the cross-validation service, comparison model evaluations (MesoNet-4) are wrapped in individual `try / except` blocks. A failure in MesoNet-4 sets its status to `"error"` while allowing primary Xception evaluation to complete normally.
+- **Workload Limits**: Benchmark evaluations are capped at `MAX_BENCHMARK_SAMPLES = 500` samples per request to prevent denial of service through unbounded evaluation manifests.
 
 ---
 
-## 14. Logging Policy
+## 15. Cross-Validation Security
+- **Secure Upload Path**: Cross-validation uploads utilize identical streaming size guards and magic-byte inspections as the primary pipeline.
+- **Comparison Detector Isolation**: In the cross-validation service, comparison model evaluations (MesoNet-4) are wrapped in individual `try / except` blocks. A failure in MesoNet-4 sets its status to `"error"` while allowing primary Xception evaluation to complete normally. Primary detector state remains isolated from comparison anomalies.
+
+---
+
+## 16. Logging Policy
 - **Diagnostic Logging**: Logs record timestamp, process level, analysis case IDs, extracted telemetry, and operational errors.
 - **Privacy & Secret Protection**: Logs contain no authentication tokens, passwords, private keys, or raw binary payloads. Host paths embedded in unhandled exceptions are sanitized before logging.
 
 ---
 
-## 15. Configurable Security Limits Reference
+## 17. Configurable Limits
+The system exposes explicit, configurable resource limits via environment variables:
 
 | Parameter | Environment Variable | Default Value | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -131,9 +144,27 @@ Filenames, case identifiers, report snapshot lookups, and evaluation datasets ar
 
 ---
 
-## 16. Known Remaining Limitations
+## 18. Resource Baseline (Stage 9A Final Verification)
+Measurements recorded on live backend server process (`uvicorn app.main:app`, PID 11128) using high-frequency resident set size (RSS) sampling at 10 ms intervals:
+
+| Workload Scenario | Wall-Clock Time | Process RSS Before | Peak RSS (Sampled) | Process RSS After | Analyzed Entities | GPU VRAM |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **A. Normal Image Analysis** | `0.848 s` | `794.64 MB` | `853.55 MB` | `792.23 MB` | 2 detected faces (Xception + YuNet + Grad-CAM + FFT) | `N/A` (CPU execution) |
+| **B. Normal Video Analysis** | `1.149 s` | `792.23 MB` | `857.48 MB` | `795.32 MB` | 2 frames analyzed @ 30.0 FPS (Stride: 15) | `N/A` (CPU execution) |
+| **C. Concurrent Images (2 workers)** | `1.555 s` total<br>(Task 1: 0.733s, Task 2: 1.554s) | `795.32 MB` | `864.44 MB` | `789.16 MB` | 2 requests serialized via `_inference_lock` | `N/A` (CPU execution) |
+| **D. Concurrent Videos (2 workers)** | `2.327 s` total<br>(Task 1: 1.183s, Task 2: 2.326s) | `789.16 MB` | `858.16 MB` | `855.74 MB` | 2 requests serialized via `_inference_lock` | `N/A` (CPU execution) |
+
+*Notes on Resource Behavior:*
+- **CPU RAM**: Steady-state server memory footprint remains between ~789 MB and ~795 MB post-startup with pre-warmed Xception and MesoNet models. Peak transient memory under concurrent workloads reaches ~864 MB during simultaneous tensor transformations, immediately stabilizing after garbage collection.
+- **GPU VRAM**: Reported as `N/A` on this host environment as CUDA acceleration is unavailable and inference executes through PyTorch multi-threaded CPU kernels.
+- **Concurrency Isolation**: Concurrent analyses serialize through `_inference_lock` without thread contention, memory corruption, or analysis ID collisions.
+
+---
+
+## 19. Known Limitations
 In accordance with professional forensic standards, the following architectural and operational constraints are documented:
 1. **Local Single-Node Model Locking**: Model inference synchronization uses an in-process threading lock (`threading.Lock()`). Under heavy multi-tenant concurrency, requests are queued sequentially through the neural forward pass. A multi-worker cluster with dynamic GPU worker pools would require distributed worker queues (out of scope for local forensic deployment).
 2. **Container Header Parsing**: OpenCV and Pillow parse complex container structures (e.g. MP4 atom trees, EXIF TIFF tags). While validated against known malformed containers, low-level vulnerabilities in underlying C/C++ libraries (libjpeg-turbo, libpng, FFmpeg) require keeping system runtime libraries patched.
 3. **Absence of Rate Limiting**: The local application runs without an upstream reverse proxy (e.g. Nginx, Cloudflare) or Redis token-bucket rate limiter. In an Internet-facing production deployment, an ingress reverse proxy must enforce IP rate limits and TLS termination.
 4. **Client-Side Video Codecs**: Playback of certain video codecs in web browsers depends on client browser codec support (e.g. H.264/AVC vs HEVC/H.265).
+

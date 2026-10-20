@@ -17,21 +17,23 @@ from ..models.schemas import (
     FaceAnalysisItem,
     FaceBoundingBox,
     ModelDetails,
-    VideoFrameAnalysisItem
+    VideoFrameAnalysisItem,
+    PrimaryFaceResult,
+    AllFacesResult
 )
 from ..models.temporal_schemas import TemporalFrameItem
 from ..utils.logger import logger
 from ..utils.file_utils import sanitize_error_message
 from .face_service import detect_and_crop_faces
 
-# Path configuration
-BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
-WORKSPACE_ROOT = BACKEND_DIR.parent
-DEEPFAKE_DIR = WORKSPACE_ROOT / "deepfake_model"
-BENCH_DIR = DEEPFAKE_DIR / "DeepfakeBench"
-TRAINING_DIR = BENCH_DIR / "training"
-CONFIG_PATH = TRAINING_DIR / "config" / "detector" / "xception.yaml"
-WEIGHTS_PATH = TRAINING_DIR / "weights" / "xception_best.pth"
+from ..config import (
+    XCEPTION_CONFIG_PATH as CONFIG_PATH,
+    XCEPTION_WEIGHTS_PATH as WEIGHTS_PATH,
+    BENCH_DIR,
+    TRAINING_DIR,
+    BACKEND_DIR,
+    WORKSPACE_ROOT
+)
 
 # Setup python path for DeepfakeBench modules
 if str(TRAINING_DIR) not in sys.path:
@@ -54,6 +56,17 @@ _model = None
 _model_config = None
 _device = None
 _inference_lock = threading.Lock()
+
+TASK_SCOPE_DISCLOSURE = (
+    "DEEPTRACE Xception is specialized for localized facial-manipulation detection (face-swaps, deepfake reenactments). "
+    "It has not been validated as a general-purpose detector of full-scene AI-generated imagery (e.g. latent diffusion "
+    "or GAN synthesis). A REAL classification indicates the absence of localized facial manipulation artifacts, not certified non-AI provenance."
+)
+
+ALL_FACES_LIMITATION_DISCLOSURE = (
+    "All-Faces Limitation: The unweighted arithmetic mean assigns equal weight to every detected face regardless of size. "
+    "Small background detections or false positives can influence the aggregate. Primary Face Analysis is the default standard for examining the primary subject."
+)
 
 
 def get_xception_detector():
@@ -101,11 +114,12 @@ def preprocess_face_crop(
     crop: np.ndarray,
     resolution: int = 256,
     mean: Tuple = (0.5, 0.5, 0.5),
-    std: Tuple = (0.5, 0.5, 0.5)
+    std: Tuple = (0.5, 0.5, 0.5),
+    is_bgr: bool = True
 ) -> torch.Tensor:
     """
     Applies the exact DeepfakeBench Xception preprocessing:
-    1. BGR -> RGB
+    1. BGR -> RGB (if input is BGR)
     2. Resize to 256x256 using cv2.INTER_CUBIC
     3. ToTensor() scaled to [0.0, 1.0]
     4. Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) mapped to [-1.0, 1.0]
@@ -113,7 +127,7 @@ def preprocess_face_crop(
     if crop is None or crop.size == 0:
         raise ValueError("Invalid or empty face crop.")
 
-    img_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+    img_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB) if is_bgr else crop
     img_resized = cv2.resize(img_rgb, (resolution, resolution), interpolation=cv2.INTER_CUBIC)
 
     transform = T.Compose([
@@ -124,7 +138,7 @@ def preprocess_face_crop(
     return tensor
 
 
-def predict_face_crop(crop: np.ndarray, threshold: float = DEEPFAKE_THRESHOLD) -> Dict[str, Any]:
+def predict_face_crop(crop: np.ndarray, threshold: float = DEEPFAKE_THRESHOLD, is_bgr: bool = True) -> Dict[str, Any]:
     """
     Runs Xception inference on a single face crop.
     
@@ -145,12 +159,12 @@ def predict_face_crop(crop: np.ndarray, threshold: float = DEEPFAKE_THRESHOLD) -
     mean = config.get('mean', [0.5, 0.5, 0.5])
     std = config.get('std', [0.5, 0.5, 0.5])
 
-    tensor = preprocess_face_crop(crop, resolution=resolution, mean=mean, std=std)
+    tensor = preprocess_face_crop(crop, resolution=resolution, mean=mean, std=std, is_bgr=is_bgr)
     tensor = tensor.to(device)
 
     try:
         with _inference_lock:
-            with torch.no_grad():
+            with torch.inference_mode():
                 output = detector({'image': tensor})
 
         # Convert logits to probability via softmax
@@ -175,15 +189,29 @@ def predict_face_crop(crop: np.ndarray, threshold: float = DEEPFAKE_THRESHOLD) -
         prediction = "real"
         confidence = real_prob
 
+    raw_logits_list = [round(float(logits[0][0].item()), 4), round(float(logits[0][1].item()), 4)]
+
+    # Comprehensive forensic diagnostic logging
+    logger.info(
+        f"[Xception Forensic Diagnostic] Model: Xception | Checkpoint: {WEIGHTS_PATH.name} | "
+        f"Input: {resolution}x{resolution} RGB | Raw Logits: {raw_logits_list} | "
+        f"Class 0 (Authentic): {real_prob:.4f} | Class 1 (Manipulated): {fake_prob:.4f} | "
+        f"Selected: {prediction} (prob={confidence:.4f}) | Decision Threshold: {threshold:.2f}"
+    )
+
     return {
         "prediction": prediction,
         "probability": round(confidence, 4),
         "real_probability": round(real_prob, 4),
-        "fake_probability": round(fake_prob, 4)
+        "fake_probability": round(fake_prob, 4),
+        "raw_logits": raw_logits_list
     }
 
 
-def analyze_image(image_path: Path) -> DetectionResult:
+def analyze_image(
+    image_path: Path,
+    detection_info: Optional[Dict[str, Any]] = None
+) -> DetectionResult:
     """
     Full real image pipeline:
     Uploaded Image -> Face Detection -> Face Bounding Box -> Face Crop
@@ -200,14 +228,17 @@ def analyze_image(image_path: Path) -> DetectionResult:
     """
     logger.info(f"Running deepfake analysis on image: {image_path.name}")
 
-    # 1. Face Detection and Cropping
-    detection_info = detect_and_crop_faces(image_path)
+    # 1. Face Detection and Cropping (Reuse detection_info if already available)
+    if detection_info is None:
+        detection_info = detect_and_crop_faces(image_path)
 
     # 2. Check if no face is detected
     if detection_info["count"] == 0:
         logger.info(f"No faces detected in {image_path.name}; returning no_face_detected.")
         from .frequency_service import analyze_frequency_domain
-        full_bgr = cv2.imread(str(image_path))
+        full_bgr = detection_info.get("source_image_bgr")
+        if full_bgr is None:
+            full_bgr = cv2.imread(str(image_path))
         freq_res = analyze_frequency_domain(
             full_bgr,
             identifier_prefix=f"{image_path.stem}_full",
@@ -228,49 +259,128 @@ def analyze_image(image_path: Path) -> DetectionResult:
 
     # 3. Analyze each detected face crop independently
     face_items: List[FaceAnalysisItem] = []
-    fake_confidences: List[float] = []
-    real_confidences: List[float] = []
+    boxes = detection_info["bounding_boxes"]
+    crops = detection_info["crops"]
 
-    for idx, (bbox_dict, crop) in enumerate(zip(detection_info["bounding_boxes"], detection_info["crops"])):
+    # Image geometry for relative bounding-box area calculation
+    full_bgr = detection_info.get("source_image_bgr")
+    if full_bgr is not None:
+        img_h, img_w = full_bgr.shape[:2]
+    else:
+        img_temp = cv2.imread(str(image_path))
+        img_h, img_w = img_temp.shape[:2] if img_temp is not None else (1, 1)
+    img_area = max(1, img_w * img_h)
+
+    # Primary face selection: Select largest valid face by area (width * height)
+    areas = [b["width"] * b["height"] for b in boxes]
+    primary_idx = int(np.argmax(areas)) if areas else 0
+
+    from .gradcam_service import generate_gradcam_for_face
+
+    for idx, (bbox_dict, crop) in enumerate(zip(boxes, crops)):
         pred_result = predict_face_crop(crop)
         bbox = FaceBoundingBox(**bbox_dict)
+        area = bbox.width * bbox.height
+        rel_area = round((area / img_area) * 100, 2)
+        is_primary = (idx == primary_idx)
+        face_id = f"face_{idx}"
+
+        # Generate per-face Grad-CAM visual attribution
+        cam_prefix = f"{image_path.stem}_face{idx}"
+        cam_res = generate_gradcam_for_face(crop, identifier_prefix=cam_prefix, target_class=1)
 
         face_item = FaceAnalysisItem(
+            face_id=face_id,
             face_index=idx,
             bounding_box=bbox,
+            bbox=bbox,
+            area=area,
+            relative_area=rel_area,
+            is_primary=is_primary,
             prediction=pred_result["prediction"],
             probability=pred_result["probability"],
             real_probability=pred_result["real_probability"],
-            fake_probability=pred_result["fake_probability"]
+            fake_probability=pred_result["fake_probability"],
+            raw_logits=pred_result.get("raw_logits"),
+            gradcam_available=cam_res.get("gradcam_available", False),
+            gradcam_heatmap_url=cam_res.get("gradcam_heatmap_url"),
+            gradcam_overlay_url=cam_res.get("gradcam_overlay_url"),
+            original_face_crop_url=cam_res.get("original_face_crop_url")
         )
         face_items.append(face_item)
 
-        if pred_result["prediction"] == "fake":
-            fake_confidences.append(pred_result["fake_probability"])
-        else:
-            real_confidences.append(pred_result["real_probability"])
+    # 4. Primary-Face Mode (Default)
+    primary_face = face_items[primary_idx]
+    
+    # Margin note for primary face if near 0.50 decision threshold
+    margin_diff = abs((primary_face.fake_probability or 0.5) - DEEPFAKE_THRESHOLD)
+    is_low_margin = bool(margin_diff < 0.10)
+    margin_note = (
+        f"Low-margin model prediction ({round((primary_face.probability or 0.5)*100, 1)}% confidence, "
+        f"near {int(DEEPFAKE_THRESHOLD*100)}% decision boundary)"
+        if is_low_margin
+        else None
+    )
 
-    # 4. Multi-Face Aggregation (Conservative Any-Face Policy)
-    if len(fake_confidences) > 0:
-        overall_pred = "fake"
-        overall_prob = max(fake_confidences)
-        assessment = "Likely manipulated"
-        # Select the face crop that exhibited the highest manipulation score
-        selected_face_idx = max(range(len(face_items)), key=lambda i: face_items[i].fake_probability or 0.0)
-    else:
-        overall_pred = "real"
-        overall_prob = sum(real_confidences) / len(real_confidences) if real_confidences else 0.5
-        assessment = "Likely authentic"
-        selected_face_idx = 0
+    primary_face_result = PrimaryFaceResult(
+        face_id=primary_face.face_id or f"face_{primary_idx}",
+        face_index=primary_face.face_index,
+        prediction=primary_face.prediction,
+        probability=primary_face.probability,
+        real_probability=primary_face.real_probability or 0.5,
+        fake_probability=primary_face.fake_probability or 0.5,
+        raw_logits=primary_face.raw_logits,
+        bounding_box=primary_face.bounding_box,
+        area=primary_face.area or (primary_face.bounding_box.width * primary_face.bounding_box.height),
+        relative_area=primary_face.relative_area or 0.0,
+        margin_note=margin_note,
+        is_low_margin=is_low_margin,
+        task_scope_note=TASK_SCOPE_DISCLOSURE
+    )
 
-    # 5. Generate real Xception Grad-CAM explainability for the selected face crop
-    from .gradcam_service import generate_gradcam_for_face
-    cam_crop = detection_info["crops"][selected_face_idx]
-    cam_prefix = f"{image_path.stem}_face{selected_face_idx}"
-    cam_res = generate_gradcam_for_face(cam_crop, identifier_prefix=cam_prefix, target_class=1)
+    # 5. All-Faces Aggregation
+    # Compute mean_fake and mean_real directly from the exact same valid face set
+    valid_fakes = [f.fake_probability for f in face_items if f.fake_probability is not None]
+    valid_reals = [f.real_probability for f in face_items if f.real_probability is not None]
+    mean_fake_p = round(float(np.mean(valid_fakes)), 4) if valid_fakes else 0.5
+    mean_real_p = round(float(np.mean(valid_reals)), 4) if valid_reals else 0.5
 
-    # 6. Frequency-domain forensic analysis on the analyzed face crop
+    all_faces_pred = "fake" if mean_fake_p >= DEEPFAKE_THRESHOLD else "real"
+    # Displayed probability must strictly match the assigned class:
+    # If verdict is 'fake', it is mean_fake_p; if verdict is 'real', it is mean_real_p.
+    all_faces_prob = mean_fake_p if all_faces_pred == "fake" else mean_real_p
+
+    all_faces_low_margin = bool(abs(mean_fake_p - DEEPFAKE_THRESHOLD) < 0.10)
+    all_faces_margin_note = (
+        f"Low-margin aggregate prediction ({round(all_faces_prob * 100, 1)}% {all_faces_pred.upper()}, "
+        f"near {int(DEEPFAKE_THRESHOLD * 100)}% decision boundary)"
+        if all_faces_low_margin
+        else None
+    )
+
+    all_faces_result = AllFacesResult(
+        face_count=len(face_items),
+        prediction=all_faces_pred,
+        probability=all_faces_prob,
+        mean_fake_probability=mean_fake_p,
+        mean_real_probability=mean_real_p,
+        aggregation_rule="Unweighted mean of individual face probabilities across all detected faces",
+        margin_note=all_faces_margin_note,
+        is_low_margin=all_faces_low_margin,
+        limitation_disclosure=ALL_FACES_LIMITATION_DISCLOSURE
+    )
+
+    # Default image verdict reflects Primary Face Analysis
+    overall_pred = primary_face.prediction
+    overall_prob = primary_face.probability
+    image_real_prob = primary_face.real_probability
+    image_fake_prob = primary_face.fake_probability
+    assessment = "Likely authentic" if overall_pred == "real" else "Likely manipulated"
+
+    # 6. Frequency-domain forensic analysis on the primary face crop
     from .frequency_service import analyze_frequency_domain
+    cam_crop = crops[primary_idx]
+    cam_prefix = f"{image_path.stem}_face{primary_idx}"
     freq_res = analyze_frequency_domain(
         cam_crop,
         identifier_prefix=cam_prefix,
@@ -279,8 +389,9 @@ def analyze_image(image_path: Path) -> DetectionResult:
 
     logger.info(
         f"Analysis complete for {image_path.name}: {len(face_items)} face(s) analyzed. "
-        f"Verdict: {overall_pred} ({assessment}) with model probability {overall_prob:.4f}. "
-        f"Grad-CAM available: {cam_res.get('gradcam_available', False)}, Frequency spectrum: {freq_res.frequency_spectrum_url}."
+        f"Primary Face #{primary_idx+1} ({primary_face.area}px, {primary_face.relative_area}% of image): "
+        f"Verdict={overall_pred} ({assessment}) with model probability {overall_prob:.4f}. "
+        f"All-Faces Mean Fake Prob={mean_fake_p:.4f}."
     )
 
     return DetectionResult(
@@ -290,12 +401,21 @@ def analyze_image(image_path: Path) -> DetectionResult:
         probability=round(overall_prob, 4),
         detection_probability=round(overall_prob, 4),
         model_probability=round(overall_prob, 4),
+        real_probability=image_real_prob,
+        fake_probability=image_fake_prob,
         assessment=assessment,
         faces=face_items,
-        gradcam_available=cam_res.get("gradcam_available", False),
-        gradcam_heatmap_url=cam_res.get("gradcam_heatmap_url"),
-        gradcam_overlay_url=cam_res.get("gradcam_overlay_url"),
-        original_face_crop_url=cam_res.get("original_face_crop_url"),
+        selected_face_id=f"face_{primary_idx}",
+        analysis_mode="primary_face",
+        primary_face_result=primary_face_result,
+        all_faces_result=all_faces_result,
+        is_low_margin=is_low_margin,
+        margin_note=margin_note,
+        task_scope_note=TASK_SCOPE_DISCLOSURE,
+        gradcam_available=primary_face.gradcam_available or False,
+        gradcam_heatmap_url=primary_face.gradcam_heatmap_url,
+        gradcam_overlay_url=primary_face.gradcam_overlay_url,
+        original_face_crop_url=primary_face.original_face_crop_url,
         frequency_analysis=freq_res
     )
 
@@ -476,6 +596,9 @@ def analyze_video(
                         bounding_box=None,
                         prediction=None,
                         probability=None,
+                        real_probability=None,
+                        fake_probability=None,
+                        raw_logits=None,
                         thumbnail_url=thumbnail_url
                     )
                 )
@@ -523,7 +646,8 @@ def analyze_video(
                 meso_pred = None
                 if meso4_det is not None:
                     try:
-                        meso_res = meso4_det.predict_face_crop(selected_face_crop)
+                        selected_face_crop_rgb = cv2.cvtColor(selected_face_crop, cv2.COLOR_BGR2RGB)
+                        meso_res = meso4_det.predict_face_crop(selected_face_crop_rgb)
                         if meso_res.status == "success":
                             meso_prob = meso_res.manipulated_probability
                             meso_pred = meso_res.prediction
@@ -556,6 +680,9 @@ def analyze_video(
                         bounding_box=primary_bbox,
                         prediction=primary_pred["prediction"],
                         probability=primary_pred["probability"],
+                        real_probability=primary_pred.get("real_probability"),
+                        fake_probability=primary_pred.get("fake_probability"),
+                        raw_logits=primary_pred.get("raw_logits"),
                         thumbnail_url=thumbnail_url
                     )
                 )
@@ -584,6 +711,8 @@ def analyze_video(
             detection_probability=None,
             model_probability=None,
             video_probability=None,
+            real_probability=None,
+            fake_probability=None,
             assessment="No face detected",
             faces=[],
             frame_results=frame_results,
@@ -598,25 +727,49 @@ def analyze_video(
             temporal_analysis=empty_temporal
         )
 
-    # Calculate frame manipulation probabilities P(fake | frame_t)
+    # 5. Video-Level Statistical Aggregation (Official DeepfakeBench Frame-Average Aggregation)
+    # Explicit semantic definitions:
+    # - Eligible frames: valid frames where a face was detected and inference succeeded (m_valid).
+    # - Excluded frames: frames where no face was detected (excluded_count).
+    #   Non-face frames are not assigned 0.0 fake probability so they do not artificially skew the mean.
+    # - frame_fake_probability: P(fake | frame_t) from model softmax.
+    # - frame_real_probability: 1.0 - frame_fake_probability.
+    # - video_fake_probability: arithmetic mean of frame_fake_probability over all m_valid eligible frames.
+    # - video_real_probability: 1.0 - video_fake_probability.
+    # - final video verdict: "fake" if video_fake_probability >= DEEPFAKE_THRESHOLD (0.50) else "real".
+    # - video_probability: confidence of the final verdict (video_fake_prob for fake, video_real_prob for real).
+    excluded_count = len(frame_results) - m_valid
+
     fake_probs = []
     for f in valid_frames:
-        if f.prediction == "fake":
+        if f.fake_probability is not None:
+            fake_probs.append(f.fake_probability)
+        elif f.prediction == "fake":
             fake_probs.append(f.probability)
         else:
             fake_probs.append(round(1.0 - f.probability, 4))
 
     # Mean frame manipulation probability
     mean_fake_prob = sum(fake_probs) / m_valid
+    video_fake_prob = round(mean_fake_prob, 4)
+    video_real_prob = round(1.0 - mean_fake_prob, 4)
 
     if mean_fake_prob >= DEEPFAKE_THRESHOLD:
         overall_pred = "fake"
-        video_prob = round(mean_fake_prob, 4)
+        video_prob = video_fake_prob
         assessment = "Likely manipulated"
     else:
         overall_pred = "real"
-        video_prob = round(1.0 - mean_fake_prob, 4)
+        video_prob = video_real_prob
         assessment = "Likely authentic"
+
+    logger.info(
+        f"[Video Aggregation Audit] Video: {video_path.name} | Total Frames: {len(frame_results)} | "
+        f"Eligible Face Frames (m_valid): {m_valid} | Excluded (no-face): {excluded_count} | "
+        f"Video Fake Probability: {video_fake_prob:.4f} | Video Real Probability: {video_real_prob:.4f} | "
+        f"Decision Threshold: {DEEPFAKE_THRESHOLD:.2f} | Final Verdict: {overall_pred} ({assessment}) | "
+        f"Reported Probability: {video_prob:.4f}"
+    )
 
     # 6. Generate real Grad-CAM explainability and Frequency-domain analysis for top suspicious frames
     from .gradcam_service import generate_gradcam_for_face
@@ -631,7 +784,7 @@ def analyze_video(
     # Sort valid frames descending by manipulation probability
     sorted_suspicious = sorted(
         valid_frames,
-        key=lambda f: f.probability if f.prediction == "fake" else round(1.0 - f.probability, 4),
+        key=lambda f: f.fake_probability if f.fake_probability is not None else (f.probability if f.prediction == "fake" else round(1.0 - f.probability, 4)),
         reverse=True
     )
 
@@ -662,6 +815,9 @@ def analyze_video(
                     t_item.gradcam_available = susp_frame.gradcam_available or False
                     t_item.frequency_available = susp_frame.frequency_analysis is not None
 
+    # Free in-memory face crop arrays
+    frame_face_crops.clear()
+
     # 7. Execute Temporal Video Consistency Forensics
     from .temporal_analysis_service import get_temporal_analysis_service
     temporal_service = get_temporal_analysis_service()
@@ -683,9 +839,11 @@ def analyze_video(
         model=ModelDetails(name="Xception", source="DeepfakeBench"),
         prediction=overall_pred,
         probability=video_prob,
-        detection_probability=video_prob,
+        detection_probability=video_fake_prob,
         model_probability=video_prob,
         video_probability=video_prob,
+        real_probability=video_real_prob,
+        fake_probability=video_fake_prob,
         assessment=assessment,
         faces=[],
         frame_results=frame_results,

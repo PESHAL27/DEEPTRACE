@@ -122,7 +122,7 @@ class ForensicReportService:
             inference_device="CPU (Host Processor)",
             normalization_mean=[0.5, 0.5, 0.5],
             normalization_std=[0.5, 0.5, 0.5],
-            face_crop_padding="15% uniform spatial margin",
+            face_crop_padding="20% contextual spatial margin",
             video_sampling_interval=15,
             video_max_frames=30
         )
@@ -132,28 +132,37 @@ class ForensicReportService:
             verdict = "NO FACE DETECTED"
             conf = 0.0
             raw_prob = None
+            manip_class_prob = None
+            auth_class_prob = None
             assessment = "No facial structures identified in evidence media. Automated manipulation detection requires localized facial crops."
         elif record.prediction == "fake":
             verdict = "LIKELY MANIPULATED"
             raw_prob = record.probability or 0.0
             conf = round(raw_prob * 100, 1)
+            manip_class_prob = raw_prob
+            auth_class_prob = round(1.0 - raw_prob, 4)
             assessment = record.assessment or "Likely manipulated"
         elif record.prediction == "real":
             verdict = "REAL"
             raw_prob = record.probability or 0.0
             conf = round(raw_prob * 100, 1)
+            auth_class_prob = raw_prob
+            manip_class_prob = round(1.0 - raw_prob, 4)
             assessment = record.assessment or "Likely authentic"
         else:
             verdict = "INCONCLUSIVE"
             raw_prob = record.probability or 0.0
             conf = round(raw_prob * 100, 1)
+            manip_class_prob = raw_prob
+            auth_class_prob = round(1.0 - raw_prob, 4)
             assessment = "Inconclusive classification"
 
         primary_findings = PrimaryDetectorFindings(
             detector_name="Xception Deepfake Detector",
             verdict=verdict,
             model_probability=raw_prob,
-            manipulated_class_softmax_probability=raw_prob,
+            manipulated_class_softmax_probability=manip_class_prob,
+            authentic_class_softmax_probability=auth_class_prob,
             raw_probability=raw_prob,
             confidence_score=conf,
             classification_threshold=DEEPFAKE_THRESHOLD,
@@ -163,16 +172,27 @@ class ForensicReportService:
 
         # 4. Face Detection Evidence
         face_items: List[FaceDetectionItem] = []
+        primary_idx = 0
+        if getattr(record, 'primary_face_result', None):
+            primary_idx = record.primary_face_result.face_index
+        elif record.faces:
+            areas = [(f.bounding_box.width * f.bounding_box.height) if hasattr(f.bounding_box, 'width') else 0 for f in record.faces]
+            if areas:
+                primary_idx = areas.index(max(areas))
+
         if record.faces:
             for idx, f in enumerate(record.faces):
-                bbox_dict = f.bounding_box if isinstance(f.bounding_box, dict) else {"x": 0, "y": 0, "width": 0, "height": 0}
+                bbox_dict = f.bounding_box.model_dump() if hasattr(f.bounding_box, 'model_dump') else (
+                    f.bounding_box if isinstance(f.bounding_box, dict) else {"x": 0, "y": 0, "width": 0, "height": 0}
+                )
+                is_prim = (idx == primary_idx)
                 face_items.append(
                     FaceDetectionItem(
                         face_index=idx,
                         bounding_box=bbox_dict,
                         prediction=f.prediction,
                         probability=f.probability,
-                        is_primary=(idx == 0)
+                        is_primary=is_prim
                     )
                 )
 
@@ -180,7 +200,7 @@ class ForensicReportService:
             status=record.status,
             faces_detected=record.faces_detected or 0,
             faces=face_items,
-            primary_face_index=0 if face_items else None
+            primary_face_index=primary_idx if face_items else None
         )
 
         # 5. Grad-CAM Evidence
@@ -271,7 +291,19 @@ class ForensicReportService:
             suspicious_count = 0
             if record.frame_results:
                 for f_res in record.frame_results:
-                    is_susp = bool(f_res.probability and f_res.probability >= DEEPFAKE_THRESHOLD)
+                    # A frame is suspicious if and only if it exhibits manipulation evidence:
+                    # prediction is "fake" or fake_probability >= DEEPFAKE_THRESHOLD
+                    fake_p = f_res.fake_probability if getattr(f_res, 'fake_probability', None) is not None else (
+                        f_res.probability if f_res.prediction == "fake" else (
+                            round(1.0 - f_res.probability, 4) if f_res.probability is not None else None
+                        )
+                    )
+                    real_p = f_res.real_probability if getattr(f_res, 'real_probability', None) is not None else (
+                        round(1.0 - fake_p, 4) if fake_p is not None else None
+                    )
+                    is_susp = bool(f_res.face_detected and (
+                        f_res.prediction == "fake" or (fake_p is not None and fake_p >= DEEPFAKE_THRESHOLD)
+                    ))
                     if is_susp:
                         suspicious_count += 1
                     frame_list.append({
@@ -280,6 +312,8 @@ class ForensicReportService:
                         "face_detected": f_res.face_detected,
                         "prediction": f_res.prediction,
                         "probability": f_res.probability,
+                        "fake_probability": fake_p,
+                        "real_probability": real_p,
                         "is_suspicious": is_susp
                     })
 
@@ -492,7 +526,8 @@ class ForensicReportService:
             exec_lines = [
                 f"DEEPTRACE analyzed media file '{sanitize_path(record.filename)}' ({record.file_size_human}) "
                 f"using the DeepfakeBench Xception convolutional neural network detector paired with OpenCV YuNet facial localization. "
-                f"The primary detector produced a manipulated-class softmax model probability of {raw_prob:.4f} ({conf}%), "
+                f"The primary detector evaluated the evidence facial structures, producing a manipulated-class softmax probability of {manip_class_prob:.4f} "
+                f"and an authentic-class probability of {auth_class_prob:.4f} (primary model confidence: {conf}%), "
                 f"resulting in a classification verdict of {verdict} against the standard decision threshold of {DEEPFAKE_THRESHOLD}."
             ]
         else:
@@ -528,6 +563,16 @@ class ForensicReportService:
             if signals:
                 exec_lines.append("Supporting factual analytical observations: " + "; ".join(signals) + ".")
 
+            if getattr(record, 'primary_face_result', None) and record.primary_face_result.margin_note:
+                exec_lines.append(f"Model Confidence Advisory: {record.primary_face_result.margin_note}.")
+
+        exec_lines.append(
+            "Task Scope Disclosure: DeepfakeBench Xception is trained and evaluated specifically for localized facial-manipulation detection "
+            "(face-swaps, facial reenactments, and deepfake blends). It has not been validated as a general-purpose detector of full-scene "
+            "AI-generated imagery (e.g. latent diffusion models such as Midjourney, FLUX, DALL-E, or StyleGAN). A REAL classification denotes "
+            "the absence of localized facial tampering, not certified non-AI media provenance."
+        )
+
         exec_lines.append(
             "Automated Analysis Statement: The findings in this report represent automated model outputs, "
             "visual explainability heuristics, and physical signal measurements. They do not constitute "
@@ -538,8 +583,8 @@ class ForensicReportService:
         # 13. Pipeline Methodology Steps
         methodology_details = [
             {"step": "1. Ingestion & Validation", "description": "Validation of file magic bytes, MIME type, size bounds, and cryptographic SHA-256 calculation."},
-            {"step": "2. Facial Localization", "description": "OpenCV YuNet deep face detector locates face bounding boxes with a 15% uniform boundary margin."},
-            {"step": "3. Normalization", "description": "Resized to 256x256 RGB and normalized via ImageNet/FF++ mean [0.5, 0.5, 0.5] and std [0.5, 0.5, 0.5]."},
+            {"step": "2. Facial Localization", "description": "OpenCV YuNet deep face detector locates face bounding boxes with a 20% contextual boundary margin."},
+            {"step": "3. Normalization", "description": "Resized to 256x256 RGB and normalized via DeepfakeBench mean [0.5, 0.5, 0.5] and std [0.5, 0.5, 0.5]."},
             {"step": "4. Primary Model Inference", "description": "DeepfakeBench Xception CNN (pretrained on FaceForensics++ c23) produces manipulation logits."},
             {"step": "5. Frame Aggregation (Video)", "description": "Samples video frames at configurable interval; aggregates top-20% suspicious frame quantile."},
             {"step": "6. Model Attention (Grad-CAM)", "description": "Computes gradients of manipulated-class logit with respect to conv4 feature maps for visual attribution."},
@@ -552,6 +597,9 @@ class ForensicReportService:
         # 14. Relevant Limitations
         limitations = [
             "Model probability represents statistical correlation with training artifacts, not deterministic proof of media provenance.",
+            "DeepfakeBench Xception is specialized for localized facial-manipulation detection (face-swaps, deepfake reenactments); it has not been validated as a general-purpose detector of full-scene AI-generated media.",
+            "All-Faces mode computes an unweighted arithmetic mean where each detected face receives equal weight; small background false positives or peripheral faces can influence this aggregate.",
+            "Low-margin model predictions (probabilities close to the 50% threshold) reflect statistical uncertainty and weak activation margins and should not be interpreted as definitive forensic proof.",
             "Video compression (H.264/H.265 quantization, macroblocking) can induce high-frequency noise that inflates detector suspicion.",
             "Absence of EXIF metadata is standard across messaging applications and web platforms and is not evidence of tampering.",
             "Grad-CAM visualizes neural network attention focus and does not delineate ground-truth manipulation boundaries.",

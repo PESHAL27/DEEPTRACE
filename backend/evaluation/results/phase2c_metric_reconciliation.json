@@ -1,0 +1,136 @@
+{
+  "title": "DEEPTRACE Phase 2C Complete Metric Reconciliation",
+  "timestamp": "2026-10-20T19:36:00Z",
+  "validation_set_metadata": {
+    "split": "development_validation",
+    "pairs_count": 50,
+    "samples_count": 100,
+    "manipulation_method": "InsightFace inswapper_128",
+    "decision_threshold": 0.5
+  },
+  "recomputed_point_estimates_from_per_sample_vectors": {
+    "model_a_spatial_xception": {
+      "tp": 24,
+      "fp": 9,
+      "tn": 41,
+      "fn": 26,
+      "total": 100,
+      "accuracy": 0.65,
+      "precision": 0.7273,
+      "recall": 0.48,
+      "specificity": 0.82,
+      "f1_score": 0.5783,
+      "false_positive_rate": 0.18,
+      "false_negative_rate": 0.52,
+      "roc_auc": 0.6334,
+      "pr_auc_trapezoidal": 0.7164,
+      "average_precision": 0.72
+    },
+    "model_b_frequency_full_canvas": {
+      "tp": 36,
+      "fp": 5,
+      "tn": 45,
+      "fn": 14,
+      "total": 100,
+      "accuracy": 0.81,
+      "precision": 0.878,
+      "recall": 0.72,
+      "specificity": 0.9,
+      "f1_score": 0.7912,
+      "false_positive_rate": 0.1,
+      "false_negative_rate": 0.28,
+      "roc_auc": 0.8668,
+      "pr_auc_trapezoidal": 0.8878,
+      "average_precision": 0.8889
+    },
+    "model_c_fused_full_canvas": {
+      "tp": 40,
+      "fp": 6,
+      "tn": 44,
+      "fn": 10,
+      "total": 100,
+      "accuracy": 0.84,
+      "precision": 0.8696,
+      "recall": 0.8,
+      "specificity": 0.88,
+      "f1_score": 0.8333,
+      "false_positive_rate": 0.12,
+      "false_negative_rate": 0.2,
+      "roc_auc": 0.9124,
+      "pr_auc_trapezoidal": 0.9171,
+      "average_precision": 0.918
+    }
+  },
+  "discrepancy_analysis": [
+    {
+      "topic": "Trapezoidal PR-AUC vs Average Precision (AP)",
+      "reported_values": {
+        "model_a": {
+          "pr_auc_trapezoidal": 0.7164,
+          "average_precision": 0.72
+        },
+        "model_b": {
+          "pr_auc_trapezoidal": 0.8878,
+          "average_precision": 0.8889
+        },
+        "model_c": {
+          "pr_auc_trapezoidal": 0.9171,
+          "average_precision": 0.918
+        }
+      },
+      "discrepancy_category": "MATHEMATICAL_DEFINITION_DISTINCTION",
+      "root_cause": "Trapezoidal PR-AUC (scikit-learn auc(recall, precision)) interpolates linearly between precision-recall points, which creates an optimistic approximation over large recall steps. Average Precision (average_precision_score) computes a step-wise Riemann sum weighted by the exact change in recall (AP = sum((R_n - R_n-1) * P_n)). These two metrics are mathematically distinct; the reported numerical differences are mathematically expected and not errors."
+    },
+    {
+      "topic": "Frequency Experiment Report (0.8652 / 0.9108) vs Bootstrap Metrics (0.8668 / 0.9124)",
+      "reported_values": {
+        "frequency_experiment_report_md": {
+          "model_b_roc_auc": 0.8652,
+          "model_c_roc_auc": 0.9108
+        },
+        "phase2b_pair_bootstrap_metrics_json": {
+          "model_b_roc_auc": 0.8668,
+          "model_c_roc_auc": 0.9124
+        },
+        "difference": {
+          "model_b_delta_auc": 0.0016,
+          "model_c_delta_auc": 0.0016
+        }
+      },
+      "discrepancy_category": "OPENCV_DECODER_ROUNDING_ARTIFACT",
+      "root_cause": "In frequency_experiment_report.md, images were decoded via cv2.imread(..., cv2.IMREAD_GRAYSCALE), which uses libjpeg's internal fast integer conversion. In phase2b scripts, images were decoded as BGR and converted via cv2.cvtColor(img, cv2.COLOR_BGR2GRAY). The two routines produce integer rounding variations of magnitude ~10^-4 in 8D features. On 1 borderline sample pair near the 0.5 decision boundary, the continuous prediction rank shifted, changing the Mann-Whitney rank sum by exactly 4 rank positions out of 2500 total pairs (4 / 2500 = 0.0016). The discrete confusion matrices (TP, FP, TN, FN) and accuracy/recall/precision are 100% identical."
+    },
+    {
+      "topic": "Threshold-Dependent Metrics (Confusion Matrix, Accuracy, Precision, Recall, Specificity, F1)",
+      "comparison": {
+        "tp_match": true,
+        "fp_match": true,
+        "tn_match": true,
+        "fn_match": true,
+        "accuracy_match": true,
+        "precision_match": true,
+        "recall_match": true,
+        "specificity_match": true,
+        "f1_match": true
+      },
+      "discrepancy_category": "ZERO_DISCREPANCY",
+      "root_cause": "Exact mathematical agreement across all artifacts down to 4 decimal places."
+    }
+  ],
+  "statistical_testing_and_ci_verification": {
+    "resampling_protocol": "Pair-aware cluster bootstrap (50 pairs, B=2000 replicates)",
+    "verification_status": "VERIFIED_ACCURATE",
+    "paired_mcnemar_test_discordant_pairs": {
+      "b_baseline_correct_fusion_incorrect": 8,
+      "c_fusion_correct_baseline_incorrect": 27,
+      "mcnemar_chi2": 9.2571,
+      "p_value": 0.002346,
+      "conclusion": "Statistically significant difference between spatial baseline and fusion model at alpha=0.01 on this validation set."
+    },
+    "assumptions_and_limitations": [
+      "Pair-aware cluster bootstrap accounts for the non-independence of authentic and manipulated images sharing the same target scene.",
+      "Validation set was inspected during exploratory development (Phase 2B/2C); therefore all p-values and CIs are exploratory diagnostics, NOT independent test verifications.",
+      "All manipulated samples originate from a single generator (InsightFace inswapper_128); statistical significance does NOT establish cross-generator generalization."
+    ]
+  }
+}

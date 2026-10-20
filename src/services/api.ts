@@ -12,10 +12,22 @@ import type {
   DetailedForensicReportData
 } from '../types/forensics';
 
-// When backend is live, set this to true or check window.ENV
-// Live backend endpoint (FastAPI)
+// Configurable backend and media URLs for development and production deployments
 export const USE_LIVE_BACKEND = true;
-export const API_BASE_URL = 'http://127.0.0.1:8000/api';
+export const API_BASE_URL: string =
+  (import.meta.env.VITE_API_BASE_URL as string) || 'http://127.0.0.1:8000/api';
+
+export const MEDIA_BASE_URL: string =
+  (import.meta.env.VITE_MEDIA_BASE_URL as string) ??
+  (API_BASE_URL.startsWith('http') ? API_BASE_URL.replace(/\/api\/?$/, '') : '');
+
+export function resolveMediaUrl(url: string | undefined | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return url;
+  }
+  return `${MEDIA_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
 
 // In-memory store for session additions
 let sessionAnalyses: Analysis[] = [];
@@ -53,15 +65,26 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
     const bbox = f.bounding_box || {};
     const fPred = f.prediction ? f.prediction.toUpperCase() : 'FACE';
     const fProb = typeof f.probability === 'number' ? (f.probability * 100).toFixed(1) : '0.0';
+    const faceId = f.face_id || `face_${f.face_index}`;
     return {
+      faceId: faceId,
       faceIndex: f.face_index,
       left: +((bbox.x / imgW) * 100).toFixed(2),
       top: +((bbox.y / imgH) * 100).toFixed(2),
       width: +((bbox.width / imgW) * 100).toFixed(2),
       height: +((bbox.height / imgH) * 100).toFixed(2),
+      area: f.area,
+      relativeArea: f.relative_area,
+      isPrimary: f.is_primary,
       label: `Face #${f.face_index + 1}: ${fPred} (${fProb}%)`,
       prediction: f.prediction,
-      probability: f.probability
+      probability: f.probability,
+      realProbability: f.real_probability,
+      fakeProbability: f.fake_probability,
+      rawLogits: f.raw_logits,
+      gradcamOverlayUrl: resolveMediaUrl(f.gradcam_overlay_url),
+      gradcamHeatmapUrl: resolveMediaUrl(f.gradcam_heatmap_url),
+      originalFaceCropUrl: resolveMediaUrl(f.original_face_crop_url)
     };
   });
 
@@ -70,59 +93,81 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
     : (typeof data.probability === 'number' ? data.probability : 0);
 
   let predictionStr: any = 'INCONCLUSIVE';
-  let riskLevel: 'High Risk' | 'Low Risk' | 'Inconclusive' = 'Inconclusive';
+  let riskLevel = 'Inconclusive';
   let confidenceScore = 0;
 
   if (isNoFace) {
     predictionStr = 'NO FACE DETECTED';
-    riskLevel = 'Inconclusive';
+    riskLevel = 'No Face Detected';
     confidenceScore = 0;
   } else if (isModelLoaded) {
     const pred = (data.prediction || '').toLowerCase();
     if (pred === 'fake' || data.prediction === 'LIKELY MANIPULATED') {
       predictionStr = 'LIKELY MANIPULATED';
-      riskLevel = 'High Risk';
       confidenceScore = +(effectiveProb * 100).toFixed(1);
+      riskLevel = `Model Probability: ${confidenceScore}%`;
     } else if (pred === 'real' || data.prediction === 'REAL') {
       predictionStr = 'REAL';
-      riskLevel = 'Low Risk';
       confidenceScore = +(effectiveProb * 100).toFixed(1);
+      riskLevel = `Model Probability: ${confidenceScore}%`;
     }
   }
 
   // Map video frame results to suspiciousFrames and timelineData
   const rawFrameResults: any[] = data.frame_results || [];
+
+  // Explicit selection criterion for Suspicious Frames:
+  // A frame is suspicious if and only if a face is detected AND the frame is classified as manipulated:
+  // (prediction === 'fake' OR fake_probability >= 0.50).
+  // Authentic/real frames must never be included in the suspicious frames panel.
   const suspiciousFrames = rawFrameResults
-    .filter((f: any) => f.face_detected && (f.prediction === 'fake' || (f.probability ?? 0) >= 0.5))
+    .filter((f: any) => {
+      if (!f.face_detected) return false;
+      const fakeP = typeof f.fake_probability === 'number'
+        ? f.fake_probability
+        : (f.prediction === 'fake' ? f.probability : (typeof f.probability === 'number' ? +(1.0 - f.probability).toFixed(4) : 0));
+      return f.prediction === 'fake' || fakeP >= 0.5;
+    })
     .map((f: any) => {
+      const fakeP = typeof f.fake_probability === 'number'
+        ? f.fake_probability
+        : (f.prediction === 'fake' ? f.probability : (typeof f.probability === 'number' ? +(1.0 - f.probability).toFixed(4) : 0));
+      const realP = typeof f.real_probability === 'number'
+        ? f.real_probability
+        : +(1.0 - fakeP).toFixed(4);
+
       const bbox = f.bounding_box;
       const box = bbox ? {
         left: +((bbox.x / imgW) * 100).toFixed(2),
         top: +((bbox.y / imgH) * 100).toFixed(2),
         width: +((bbox.width / imgW) * 100).toFixed(2),
         height: +((bbox.height / imgH) * 100).toFixed(2),
-        label: `Frame #${f.frame_number}: FAKE (${((f.probability ?? 0) * 100).toFixed(1)}%)`,
+        label: `Frame #${f.frame_number}: FAKE (${(fakeP * 100).toFixed(1)}%)`,
         prediction: 'fake',
-        probability: f.probability
+        probability: fakeP
       } : undefined;
 
       return {
         id: `f-${f.frame_number}`,
+        frameNumber: f.frame_number,
         timestamp: formatSecondsToMMSS(f.timestamp),
         seconds: f.timestamp,
-        confidence: f.probability ?? 0,
-        thumbnailUrl: f.thumbnail_url || `/uploads/${data.analysis_id}_${data.filename}`,
+        confidence: fakeP,
+        fakeProbability: fakeP,
+        realProbability: realP,
+        prediction: 'fake' as const,
+        thumbnailUrl: resolveMediaUrl(f.thumbnail_url || `/uploads/${data.analysis_id}_${data.filename}`),
         status: 'Manipulated Frame',
         anomalyType: 'Facial Boundary Discrepancy',
         boundingBox: box,
         gradcamAvailable: f.gradcam_available ?? false,
-        gradcamOverlayUrl: f.gradcam_overlay_url,
-        gradcamHeatmapUrl: f.gradcam_heatmap_url,
-        originalFaceCropUrl: f.original_face_crop_url,
+        gradcamOverlayUrl: resolveMediaUrl(f.gradcam_overlay_url),
+        gradcamHeatmapUrl: resolveMediaUrl(f.gradcam_heatmap_url),
+        originalFaceCropUrl: resolveMediaUrl(f.original_face_crop_url),
         frequencyAnalysis: f.frequency_analysis ? {
           available: f.frequency_analysis.available,
           analysisRegion: f.frequency_analysis.analysis_region,
-          frequencySpectrumUrl: f.frequency_analysis.frequency_spectrum_url,
+          frequencySpectrumUrl: resolveMediaUrl(f.frequency_analysis.frequency_spectrum_url),
           meanMagnitude: f.frequency_analysis.mean_magnitude,
           medianMagnitude: f.frequency_analysis.median_magnitude,
           lowFrequencyEnergy: f.frequency_analysis.low_frequency_energy,
@@ -133,18 +178,29 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
           totalEnergy: f.frequency_analysis.total_energy,
           findings: f.frequency_analysis.findings || []
         } : undefined,
-        frequencySpectrumUrl: f.frequency_spectrum_url || f.frequency_analysis?.frequency_spectrum_url
+        frequencySpectrumUrl: resolveMediaUrl(f.frequency_spectrum_url || f.frequency_analysis?.frequency_spectrum_url)
       };
     });
 
-  const timelineData = rawFrameResults.map((f: any) => ({
-    timestamp: formatSecondsToMMSS(f.timestamp),
-    seconds: f.timestamp,
-    probability: f.probability ?? 0.0,
-    isSuspicious: f.face_detected && (f.prediction === 'fake' || (f.probability ?? 0) >= 0.5)
-  }));
+  const timelineData = rawFrameResults.map((f: any) => {
+    const fakeP = !f.face_detected
+      ? 0.0
+      : (typeof f.fake_probability === 'number'
+          ? f.fake_probability
+          : (f.prediction === 'fake' ? (f.probability ?? 0.0) : Math.max(0, +(1.0 - (f.probability ?? 1.0)).toFixed(4))));
+    const isSuspicious = f.face_detected && (f.prediction === 'fake' || fakeP >= 0.5);
 
-  const mediaUrl = fallbackPreviewUrl || `/uploads/${data.analysis_id}_${data.filename}`;
+    return {
+      timestamp: formatSecondsToMMSS(f.timestamp),
+      seconds: f.timestamp,
+      probability: fakeP,
+      isSuspicious: isSuspicious
+    };
+  });
+
+  const rawMediaUrl = data.media_url || `/uploads/${data.analysis_id}_${data.filename}`;
+  const backendMediaUrl = resolveMediaUrl(rawMediaUrl);
+  const mediaUrl = backendMediaUrl || fallbackPreviewUrl || '';
 
   const firstFaceFrame = rawFrameResults.find((f: any) => f.face_detected && f.bounding_box);
   const videoPrimaryBox = firstFaceFrame && firstFaceFrame.bounding_box ? {
@@ -159,9 +215,9 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
 
   const primaryBox = faceBoxes.length > 0 ? faceBoxes[0] : videoPrimaryBox;
 
-  const gradcamOverlay = data.gradcam_overlay_url || data.detection?.gradcam_overlay_url || '';
-  const gradcamHeatmap = data.gradcam_heatmap_url || data.detection?.gradcam_heatmap_url || '';
-  const originalFaceCrop = data.original_face_crop_url || data.detection?.original_face_crop_url || '';
+  const gradcamOverlay = resolveMediaUrl(data.gradcam_overlay_url || data.detection?.gradcam_overlay_url || '');
+  const gradcamHeatmap = resolveMediaUrl(data.gradcam_heatmap_url || data.detection?.gradcam_heatmap_url || '');
+  const originalFaceCrop = resolveMediaUrl(data.original_face_crop_url || data.detection?.original_face_crop_url || '');
   const gradcamAvailable = data.gradcam_available ?? data.detection?.gradcam_available ?? (!!gradcamOverlay);
 
   const rawMeta = data.metadata_analysis || data.detection?.metadata_analysis;
@@ -184,7 +240,7 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
   const frequencyAnalysis = rawFreq ? {
     available: rawFreq.available ?? true,
     analysisRegion: rawFreq.analysis_region ?? 'face_region',
-    frequencySpectrumUrl: rawFreq.frequency_spectrum_url,
+    frequencySpectrumUrl: resolveMediaUrl(rawFreq.frequency_spectrum_url),
     meanMagnitude: rawFreq.mean_magnitude,
     medianMagnitude: rawFreq.median_magnitude,
     lowFrequencyEnergy: rawFreq.low_frequency_energy,
@@ -225,7 +281,39 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
     comparisonFrameUrl: mediaUrl,
     faceBoundingBox: primaryBox,
     faceBoundingBoxes: faceBoxes.length > 0 ? faceBoxes : (primaryBox ? [primaryBox] : []),
+    selectedFaceId: data.selected_face_id || data.detection?.selected_face_id || (faceBoxes.length > 0 ? faceBoxes[0].faceId : undefined),
+    analysisMode: (data.analysis_mode || data.detection?.analysis_mode || 'primary_face') as 'primary_face' | 'all_faces',
+    primaryFaceResult: data.primary_face_result || data.detection?.primary_face_result ? {
+      faceId: (data.primary_face_result || data.detection?.primary_face_result).face_id,
+      faceIndex: (data.primary_face_result || data.detection?.primary_face_result).face_index,
+      prediction: (data.primary_face_result || data.detection?.primary_face_result).prediction,
+      probability: (data.primary_face_result || data.detection?.primary_face_result).probability,
+      realProbability: (data.primary_face_result || data.detection?.primary_face_result).real_probability,
+      fakeProbability: (data.primary_face_result || data.detection?.primary_face_result).fake_probability,
+      rawLogits: (data.primary_face_result || data.detection?.primary_face_result).raw_logits,
+      area: (data.primary_face_result || data.detection?.primary_face_result).area,
+      relativeArea: (data.primary_face_result || data.detection?.primary_face_result).relative_area,
+      marginNote: (data.primary_face_result || data.detection?.primary_face_result).margin_note,
+      isLowMargin: (data.primary_face_result || data.detection?.primary_face_result).is_low_margin,
+      taskScopeNote: (data.primary_face_result || data.detection?.primary_face_result).task_scope_note
+    } : undefined,
+    allFacesResult: data.all_faces_result || data.detection?.all_faces_result ? {
+      faceCount: (data.all_faces_result || data.detection?.all_faces_result).face_count,
+      prediction: (data.all_faces_result || data.detection?.all_faces_result).prediction,
+      probability: (data.all_faces_result || data.detection?.all_faces_result).probability,
+      meanFakeProbability: (data.all_faces_result || data.detection?.all_faces_result).mean_fake_probability,
+      meanRealProbability: (data.all_faces_result || data.detection?.all_faces_result).mean_real_probability,
+      aggregationRule: (data.all_faces_result || data.detection?.all_faces_result).aggregation_rule,
+      marginNote: (data.all_faces_result || data.detection?.all_faces_result).margin_note,
+      isLowMargin: (data.all_faces_result || data.detection?.all_faces_result).is_low_margin,
+      limitationDisclosure: (data.all_faces_result || data.detection?.all_faces_result).limitation_disclosure
+    } : undefined,
+    isLowMargin: data.is_low_margin ?? data.detection?.is_low_margin ?? false,
+    marginNote: data.margin_note || data.detection?.margin_note,
+    taskScopeNote: data.task_scope_note || data.detection?.task_scope_note,
     rawProbability: effectiveProb,
+    realProbability: typeof data.real_probability === 'number' ? data.real_probability : (typeof data.detection?.real_probability === 'number' ? data.detection.real_probability : undefined),
+    fakeProbability: typeof data.fake_probability === 'number' ? data.fake_probability : (typeof data.detection?.fake_probability === 'number' ? data.detection.fake_probability : undefined),
     metadataAnalysis: metadataAnalysis,
     frequencyAnalysis: frequencyAnalysis,
     temporalAnalysis: rawTemporal || undefined
@@ -303,7 +391,7 @@ export const forensicApiService = {
         sessionAnalyses = [newAnalysis, ...sessionAnalyses];
         return newAnalysis;
       } catch (err: any) {
-        throw new Error(err.message || 'Failed to connect to backend at http://127.0.0.1:8000');
+        throw new Error(err.message || `Failed to connect to backend at ${API_BASE_URL}`);
       }
     }
 
