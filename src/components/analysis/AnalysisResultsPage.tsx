@@ -238,26 +238,86 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
   let displayedPrediction: string = analysis.prediction;
   let displayedScore: number = analysis.confidenceScore;
   let displayedMarginNote: string | undefined = undefined;
+  let isBorderlineFace = false;
+
+  const currentFaceFakeProb = (analysisMode === 'primary_face' && selectedFaceBox?.fakeProbability !== undefined)
+    ? selectedFaceBox.fakeProbability
+    : (analysisMode === 'all_faces' && analysis.allFacesResult?.mean_fake_probability !== undefined)
+      ? analysis.allFacesResult.mean_fake_probability
+      : (analysis.fakeProbability !== undefined ? analysis.fakeProbability : undefined);
+
+  if (currentFaceFakeProb !== undefined && Math.abs(currentFaceFakeProb - 0.50) <= 0.05) {
+    isBorderlineFace = true;
+  } else if (selectedFaceBox && (selectedFaceBox as any).is_low_margin) {
+    isBorderlineFace = true;
+  } else if (analysis.isLowMargin) {
+    isBorderlineFace = true;
+  }
 
   if (analysis.mediaType === 'image' && !isNoFace && !isModelNotLoaded) {
     if (analysisMode === 'primary_face' && selectedFaceBox) {
       const isFake = selectedFaceBox.prediction?.toLowerCase() === 'fake';
-      displayedPrediction = isFake ? 'LIKELY MANIPULATED' : 'REAL';
       displayedScore = selectedFaceBox.probability !== undefined 
         ? +(selectedFaceBox.probability * 100).toFixed(1) 
         : analysis.confidenceScore;
-      if (selectedFaceBox.fakeProbability !== undefined && Math.abs(selectedFaceBox.fakeProbability - 0.50) < 0.10) {
-        displayedMarginNote = `Low-margin model prediction (${displayedScore}% ${displayedPrediction}, near 50% decision boundary)`;
+      if (isBorderlineFace) {
+        displayedPrediction = 'INCONCLUSIVE';
+        displayedMarginNote = `Borderline score (${displayedScore}%), near 50% decision boundary. Low confidence for facial manipulation.`;
+      } else {
+        displayedPrediction = isFake ? 'LIKELY MANIPULATED' : 'REAL';
+        if (selectedFaceBox.fakeProbability !== undefined && Math.abs(selectedFaceBox.fakeProbability - 0.50) < 0.10) {
+          displayedMarginNote = `Low-margin model prediction (${displayedScore}% ${displayedPrediction}, near 50% decision boundary)`;
+        }
       }
     } else if (analysisMode === 'all_faces' && analysis.allFacesResult) {
       const isFake = analysis.allFacesResult.prediction.toLowerCase() === 'fake';
-      displayedPrediction = isFake ? 'LIKELY MANIPULATED' : 'REAL';
       displayedScore = +(analysis.allFacesResult.probability * 100).toFixed(1);
-      displayedMarginNote = `Aggregation: Unweighted mean of ${analysis.allFacesResult.faceCount} localized face(s)`;
+      if (isBorderlineFace) {
+        displayedPrediction = 'INCONCLUSIVE';
+        displayedMarginNote = `Borderline aggregate score (${displayedScore}%), near 50% decision boundary. Low confidence for facial manipulation.`;
+      } else {
+        displayedPrediction = isFake ? 'LIKELY MANIPULATED' : 'REAL';
+        displayedMarginNote = `Aggregation: Unweighted mean of ${analysis.allFacesResult.faceCount} localized face(s)`;
+      }
+    }
+  } else if (analysis.mediaType === 'video' && !isNoFace && !isModelNotLoaded) {
+    if (isBorderlineFace) {
+      displayedPrediction = 'INCONCLUSIVE';
+      displayedMarginNote = `Borderline score (${displayedScore}%), near 50% decision boundary. Low confidence for facial manipulation.`;
     }
   }
 
-  const isCurrentManipulated = !isNoFace && displayedPrediction === 'LIKELY MANIPULATED';
+  const isCurrentManipulated = !isNoFace && !isBorderlineFace && displayedPrediction === 'LIKELY MANIPULATED';
+
+  // Whole-Image AI Generation parameters
+  const aiGen = analysis.aiGeneration;
+  const aiGenScore = typeof aiGen?.score === 'number' ? aiGen.score : undefined;
+  const aiGenScorePercent = aiGenScore !== undefined ? +(aiGenScore * 100).toFixed(1) : undefined;
+  const aiGenStatus = aiGen?.status || 'unavailable';
+
+  let aiGenAssessment = 'ANALYSIS UNAVAILABLE';
+  let aiGenBadgeClass = 'badge-inconclusive';
+
+  if (aiGen) {
+    if (aiGenStatus === 'completed') {
+      if (aiGen.predictedLabel === 'likely_ai_generated') {
+        aiGenAssessment = 'LIKELY AI-GENERATED';
+        aiGenBadgeClass = 'badge-high';
+      } else if (aiGen.predictedLabel === 'likely_camera_captured') {
+        aiGenAssessment = 'LIKELY CAMERA-CAPTURED';
+        aiGenBadgeClass = 'badge-low';
+      } else {
+        aiGenAssessment = 'INCONCLUSIVE';
+        aiGenBadgeClass = 'badge-inconclusive';
+      }
+    } else if (aiGenStatus === 'error') {
+      aiGenAssessment = 'ANALYSIS ERROR';
+      aiGenBadgeClass = 'badge-inconclusive';
+    } else {
+      aiGenAssessment = 'UNAVAILABLE';
+      aiGenBadgeClass = 'badge-inconclusive';
+    }
+  }
 
   const scrubberPercent = durationSec > 0
     ? Math.min(100, Math.max(0, (currentTimeSec / durationSec) * 100)).toFixed(1)
@@ -343,11 +403,10 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                   (selectedFaceBox && box.faceIndex === selectedFaceBox.faceIndex) ||
                   (activeBoxes.length === 1)
                 );
-                const isFakeBox = box.prediction?.toLowerCase() === 'fake';
-                const boxColor = isFakeBox ? '#ef4444' : '#10b981';
+                const faceNum = (box.faceIndex ?? idx) + 1;
                 const tagLabel = box.isPrimary 
-                  ? `★ PRIMARY: ${box.label}` 
-                  : box.label;
+                  ? `Face #${faceNum} (Primary)` 
+                  : `Face #${faceNum}`;
 
                 return (
                   <div 
@@ -364,22 +423,24 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                       left: `${box.left}%`,
                       width: `${box.width}%`,
                       height: `${box.height}%`,
-                      borderColor: boxColor,
-                      borderWidth: isSelected ? '3px' : '2px',
+                      borderColor: isSelected ? '#38bdf8' : 'rgba(56, 189, 248, 0.65)',
+                      borderWidth: isSelected ? '2.5px' : '1.5px',
                       borderStyle: isSelected ? 'solid' : 'dashed',
                       boxShadow: isSelected 
-                        ? `0 0 14px ${isFakeBox ? 'rgba(239, 68, 68, 0.6)' : 'rgba(16, 185, 129, 0.6)'}` 
-                        : `0 0 6px ${isFakeBox ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                        ? '0 0 12px rgba(56, 189, 248, 0.45)' 
+                        : 'none',
                       opacity: (!isSelected && activeBoxes.length > 1) ? 0.75 : 1.0,
                       cursor: analysis.mediaType === 'image' ? 'pointer' : 'default',
                       zIndex: isSelected ? 10 : 5
                     }}
-                    title={analysis.mediaType === 'image' ? `Click to inspect Face #${(box.faceIndex ?? 0) + 1}` : undefined}
+                    title={analysis.mediaType === 'image' ? `Click to inspect Face #${faceNum}` : undefined}
                   >
                     <span 
                       className="face-detected-tag"
                       style={{ 
-                        backgroundColor: boxColor,
+                        backgroundColor: isSelected ? 'rgba(14, 165, 233, 0.95)' : 'rgba(15, 23, 42, 0.90)',
+                        border: isSelected ? '1px solid #38bdf8' : '1px solid rgba(56, 189, 248, 0.45)',
+                        color: '#f8fafc',
                         fontWeight: isSelected ? 700 : 500,
                         fontSize: isSelected ? '10px' : '9px'
                       }}
@@ -389,7 +450,7 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                     </span>
                     <span 
                       className="bounding-box-corner-marker" 
-                      style={{ backgroundColor: boxColor }}
+                      style={{ backgroundColor: isSelected ? '#38bdf8' : 'rgba(56, 189, 248, 0.75)' }}
                     />
                   </div>
                 );
@@ -538,9 +599,8 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                 ) : (
                   allFaceBoxes.map((box, idx) => {
                     const isSelected = (box.faceId === selectedFaceId) || (selectedFaceBox && box.faceIndex === selectedFaceBox.faceIndex);
-                    const isFake = box.prediction?.toLowerCase() === 'fake';
-                    const prob = box.probability !== undefined ? +(box.probability * 100).toFixed(1) : 0;
                     const cropThumb = box.originalFaceCropUrl || analysis.mediaUrl;
+                    const faceNumber = (box.faceIndex ?? idx) + 1;
 
                     return (
                       <div 
@@ -553,15 +613,15 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                           }
                         }}
                         style={{ cursor: 'pointer' }}
-                        title={`Click to select and inspect Face #${(box.faceIndex ?? 0) + 1}`}
+                        title={`Click to select and inspect Face #${faceNumber}`}
                       >
                         <div className="frame-thumb-box" style={{ width: 44, height: 44, borderRadius: 4, overflow: 'hidden', flexShrink: 0, backgroundColor: '#000' }}>
-                          <img src={cropThumb} alt={`Face ${(box.faceIndex ?? 0) + 1}`} className="frame-thumb-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={cropThumb} alt={`Face ${faceNumber}`} className="frame-thumb-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, marginLeft: 8 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                              Face #{(box.faceIndex ?? 0) + 1}
+                              Face #{faceNumber}
                             </span>
                             {box.isPrimary && (
                               <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: 3, backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 600 }}>
@@ -570,12 +630,14 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                             )}
                           </div>
                           <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
-                            {box.relativeArea ? `${box.relativeArea}% area • ` : ''}Prob: {prob}%
+                            {box.relativeArea ? `${box.relativeArea}% image area` : 'Localized face region'}
                           </span>
                         </div>
-                        <span className={`badge ${isFake ? 'badge-high' : 'badge-low'}`} style={{ fontSize: '9px', padding: '2px 5px' }}>
-                          {isFake ? 'FAKE' : 'REAL'}
-                        </span>
+                        {isSelected && (
+                          <span className="badge" style={{ fontSize: '9px', padding: '1px 5px', backgroundColor: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                            ACTIVE
+                          </span>
+                        )}
                       </div>
                     );
                   })
@@ -585,81 +647,200 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
           )}
         </div>
 
-        {/* 3. Prominent Verdict Card */}
+        {/* 3. Results Column */}
         <div className="verdict-card">
-          <div>
-            <div className="verdict-header-row">
-              <div className="verdict-status-title-box">
-                {isNoFace ? (
-                  <Scan size={18} color="#94a3b8" />
-                ) : isModelNotLoaded ? (
-                  <AlertTriangle size={18} color="#f59e0b" />
-                ) : isCurrentManipulated ? (
-                  <AlertTriangle size={18} className="verdict-alert-icon" />
-                ) : (
-                  <Scan size={18} color="#10b981" />
-                )}
-                <span 
-                  className={`verdict-state-text ${
-                    isNoFace ? 'is-no-face' : isModelNotLoaded ? '' : !isCurrentManipulated ? 'is-real' : ''
-                  }`}
-                  style={isNoFace ? { color: '#94a3b8', fontSize: '13.5px' } : isModelNotLoaded ? { color: '#f59e0b', fontSize: '13px' } : undefined}
-                >
-                  {isNoFace ? 'NO FACE DETECTED' : isModelNotLoaded ? 'MODEL NOT CONNECTED' : displayedPrediction}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* ============================================================== */}
+            {/* FIRST — WHOLE-IMAGE AI GENERATION (Smaug AI Image Detector)    */}
+            {/* ============================================================== */}
+            <div className="whole-image-ai-section">
+              <div className="verdict-header-row">
+                <div className="verdict-status-title-box">
+                  <Zap size={17} color="var(--accent-blue)" />
+                  <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.4px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+                    Whole-Image AI Generation
+                  </span>
+                </div>
+                <span className={`badge ${aiGenBadgeClass}`}>
+                  {aiGenAssessment}
                 </span>
               </div>
-              <span 
-                className={`badge ${
-                  isNoFace ? 'badge-inconclusive' : isModelNotLoaded ? 'badge-inconclusive' : isCurrentManipulated ? 'badge-high' : 'badge-low'
-                }`}
-              >
-                {isNoFace 
-                  ? 'No Face Detected' 
-                  : isModelNotLoaded 
-                    ? 'Awaiting Model' 
-                    : analysis.mediaType === 'video' 
-                      ? `Video Probability: ${displayedScore}%` 
-                      : analysisMode === 'primary_face' 
-                        ? `Primary Face: ${displayedScore}%` 
-                        : `All Faces Mean: ${displayedScore}%`}
-              </span>
+
+              {/* Likelihood Score & Progress Bar */}
+              <div className="confidence-section" style={{ margin: '10px 0 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                  <span className="confidence-label">
+                    {aiGen?.modelName || 'Smaug AI Image Detector'} Score
+                  </span>
+                  <div 
+                    className="confidence-score-value"
+                    style={{
+                      fontSize: '24px',
+                      color: aiGen?.predictedLabel === 'likely_ai_generated' 
+                        ? '#f87171' 
+                        : aiGen?.predictedLabel === 'likely_camera_captured' 
+                          ? '#34d399' 
+                          : 'var(--text-muted)'
+                    }}
+                  >
+                    {aiGenScorePercent !== undefined ? `${aiGenScorePercent}%` : 'N/A'}
+                  </div>
+                </div>
+
+                <div className="confidence-progress-track" style={{ height: 6 }}>
+                  <div 
+                    className={`confidence-progress-bar ${
+                      aiGen?.predictedLabel === 'likely_camera_captured' 
+                        ? 'is-camera' 
+                        : aiGen?.predictedLabel === 'likely_ai_generated' 
+                          ? 'is-ai-gen' 
+                          : 'is-inconclusive'
+                    }`}
+                    style={{ 
+                      width: aiGenScorePercent !== undefined ? `${Math.min(100, Math.max(0, aiGenScorePercent))}%` : '0%'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', color: 'var(--text-dim)', marginTop: 2 }}>
+                  <span>Camera-Captured (0%)</span>
+                  <span>Decision Boundary: 50%</span>
+                  <span>AI-Generated (100%)</span>
+                </div>
+              </div>
+
+              {/* Scope & Capability Explanation */}
+              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', lineHeight: 1.4, backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '6px 8px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
+                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Model Scope: </span>
+                Smaug AI Image Detector analyzes the entire image structure (including portraits, landscapes, products, illustrations, and artwork) for signs of end-to-end AI synthesis or diffusion generation.
+              </div>
+
+              {aiGen?.status === 'error' && aiGen.errorMessage && (
+                <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 4, backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', fontSize: '10.5px', color: '#f87171' }}>
+                  <span style={{ fontWeight: 600 }}>Detector Notice:</span> {aiGen.errorMessage}
+                </div>
+              )}
             </div>
 
-            {/* Model Probability Score Bar */}
-            <div className="confidence-section">
-              <span className="confidence-label">
-                {analysis.mediaType === 'video' ? 'Video Probability' : analysisMode === 'primary_face' ? 'Primary Face Probability' : 'All Faces Probability (Mean)'}
-              </span>
-              <div 
-                className="confidence-score-value"
-                style={isNoFace || isModelNotLoaded ? { fontSize: '18px', color: 'var(--text-muted)' } : undefined}
-              >
-                {isNoFace ? 'N/A' : isModelNotLoaded ? 'Awaiting Analysis' : `${displayedScore}%`}
-              </div>
-              <div className="confidence-progress-track">
-                <div 
-                  className={`confidence-progress-bar ${!isCurrentManipulated && !isNoFace ? 'is-real' : ''}`}
-                  style={{ 
-                    width: isNoFace || isModelNotLoaded ? '0%' : `${displayedScore}%`,
-                    backgroundColor: isNoFace || isModelNotLoaded ? 'var(--text-dim)' : undefined
-                  }}
-                />
-              </div>
-              {displayedMarginNote && (
-                <div style={{ marginTop: 8, padding: '5px 8px', borderRadius: 4, backgroundColor: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', fontSize: '10.5px', color: '#fbbf24', lineHeight: 1.35 }}>
-                  <span style={{ fontWeight: 600 }}>Advisory:</span> {displayedMarginNote}
+            {/* ============================================================== */}
+            {/* SECOND — FACIAL MANIPULATION ANALYSIS (Xception DeepfakeBench) */}
+            {/* ============================================================== */}
+            <div className="facial-manipulation-section" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
+              <div className="verdict-header-row">
+                <div className="verdict-status-title-box">
+                  {isNoFace ? (
+                    <Scan size={17} color="#94a3b8" />
+                  ) : isModelNotLoaded ? (
+                    <AlertTriangle size={17} color="#f59e0b" />
+                  ) : isBorderlineFace ? (
+                    <AlertTriangle size={17} color="#f59e0b" />
+                  ) : isCurrentManipulated ? (
+                    <AlertTriangle size={17} className="verdict-alert-icon" />
+                  ) : (
+                    <Scan size={17} color="#10b981" />
+                  )}
+                  <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.4px', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
+                    Facial Manipulation Analysis
+                  </span>
                 </div>
-              )}
-              {analysis.mediaType === 'image' && analysisMode === 'all_faces' && (
-                <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 4, backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', fontSize: '10px', color: '#93c5fd', lineHeight: 1.35 }}>
-                  <span style={{ fontWeight: 600 }}>All-Faces Limitation:</span> Each face receives equal weight. Background detections or peripheral faces can influence this aggregate; Primary Face is the default standard for examining the primary subject.
+                <span 
+                  className={`badge ${
+                    isNoFace 
+                      ? 'badge-inconclusive' 
+                      : isModelNotLoaded 
+                        ? 'badge-inconclusive' 
+                        : isBorderlineFace 
+                          ? 'badge-inconclusive' 
+                          : isCurrentManipulated 
+                            ? 'badge-high' 
+                            : 'badge-low'
+                  }`}
+                >
+                  {isNoFace 
+                    ? 'No Face Detected' 
+                    : isModelNotLoaded 
+                      ? 'Model Offline' 
+                      : isBorderlineFace 
+                        ? 'Low Confidence' 
+                        : isCurrentManipulated 
+                          ? 'Likely Manipulated' 
+                          : 'Likely Authentic'}
+                </span>
+              </div>
+
+              {/* Score and Bar */}
+              <div className="confidence-section" style={{ margin: '10px 0 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                  <span className="confidence-label">
+                    {analysis.mediaType === 'video' 
+                      ? 'Video Frame Analysis' 
+                      : analysisMode === 'primary_face' 
+                        ? `Primary Face (Face #${(selectedFaceBox?.faceIndex ?? 0) + 1})` 
+                        : `All Faces Aggregate (${analysis.facesDetected} localized)`}
+                  </span>
+                  <div 
+                    className="confidence-score-value"
+                    style={isNoFace || isModelNotLoaded ? { fontSize: '18px', color: 'var(--text-muted)' } : {
+                      fontSize: '24px',
+                      color: isBorderlineFace 
+                        ? '#fbbf24' 
+                        : isCurrentManipulated 
+                          ? '#f87171' 
+                          : '#34d399'
+                    }}
+                  >
+                    {isNoFace ? 'N/A' : isModelNotLoaded ? 'Awaiting Analysis' : `${displayedScore}%`}
+                  </div>
                 </div>
-              )}
+
+                <div className="confidence-progress-track" style={{ height: 6 }}>
+                  <div 
+                    className={`confidence-progress-bar ${
+                      isBorderlineFace 
+                        ? 'is-inconclusive' 
+                        : isCurrentManipulated 
+                          ? '' 
+                          : !isNoFace 
+                            ? 'is-real' 
+                            : 'is-inconclusive'
+                    }`}
+                    style={{ 
+                      width: isNoFace || isModelNotLoaded ? '0%' : `${displayedScore}%`,
+                      backgroundColor: isNoFace || isModelNotLoaded ? 'var(--text-dim)' : undefined
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', color: 'var(--text-dim)', marginTop: 2 }}>
+                  <span>Authentic (0%)</span>
+                  <span>Decision Boundary: 50%</span>
+                  <span>Manipulated (100%)</span>
+                </div>
+
+                {displayedMarginNote && (
+                  <div style={{ marginTop: 8, padding: '5px 8px', borderRadius: 4, backgroundColor: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', fontSize: '10.5px', color: '#fbbf24', lineHeight: 1.35 }}>
+                    <span style={{ fontWeight: 600 }}>Advisory:</span> {displayedMarginNote}
+                  </div>
+                )}
+                {analysis.mediaType === 'image' && analysisMode === 'all_faces' && (
+                  <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 4, backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', fontSize: '10px', color: '#93c5fd', lineHeight: 1.35 }}>
+                    <span style={{ fontWeight: 600 }}>All-Faces Limitation:</span> Each face receives equal weight. Background detections or peripheral faces can influence this aggregate; Primary Face is the default standard for examining the primary subject.
+                  </div>
+                )}
+              </div>
+
+              {/* Task Scope Explanation */}
+              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', lineHeight: 1.4, backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '6px 8px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
+                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Model Scope: </span>
+                Xception evaluates detected faces for facial manipulation, such as face swaps and reenactments. It is not a general-purpose detector for fully AI-generated images.
+              </div>
             </div>
+
           </div>
 
           {/* Model Metrics Breakdown */}
-          <div className="verdict-meta-list">
+          <div className="verdict-meta-list" style={{ marginTop: 12 }}>
             <div className="verdict-meta-row">
               <span className="verdict-meta-key">
                 <Film size={13} />
@@ -683,9 +864,27 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
             <div className="verdict-meta-row">
               <span className="verdict-meta-key">
                 <Layers size={13} />
-                <span>Model Name</span>
+                <span>Facial Model</span>
               </span>
               <span className="verdict-meta-val mono-text">{analysis.model}</span>
+            </div>
+
+            <div className="verdict-meta-row">
+              <span className="verdict-meta-key">
+                <Zap size={13} />
+                <span>Whole-Image Model</span>
+              </span>
+              <span className="verdict-meta-val mono-text">{aiGen?.modelName || 'Smaug AI Image Detector'}</span>
+            </div>
+
+            <div className="verdict-meta-row">
+              <span className="verdict-meta-key">
+                <User size={13} />
+                <span>Faces Detected</span>
+              </span>
+              <span className="verdict-meta-val">
+                {analysis.facesDetected}
+              </span>
             </div>
 
             {analysis.mediaType === 'video' && (
@@ -699,36 +898,6 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
                 </span>
               </div>
             )}
-
-            <div className="verdict-meta-row">
-              <span className="verdict-meta-key">
-                <User size={13} />
-                <span>Faces Detected</span>
-              </span>
-              <span className="verdict-meta-val">
-                {analysis.facesDetected}
-              </span>
-            </div>
-
-            <div className="verdict-meta-row">
-              <span className="verdict-meta-key">
-                <Scan size={13} />
-                <span>Prediction</span>
-              </span>
-              <span className="verdict-meta-val" style={{ fontWeight: 600, color: isNoFace ? '#94a3b8' : isCurrentManipulated ? '#f87171' : '#34d399' }}>
-                {isNoFace ? 'NO FACE DETECTED' : displayedPrediction}
-              </span>
-            </div>
-
-            <div className="verdict-meta-row" style={{ alignItems: 'flex-start', borderTop: '1px solid var(--border-subtle)', paddingTop: 8, marginTop: 4 }}>
-              <span className="verdict-meta-key" style={{ marginTop: 2 }}>
-                <ShieldAlert size={13} color="var(--accent-blue)" />
-                <span>Task Scope</span>
-              </span>
-              <span className="verdict-meta-val" style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.3, textAlign: 'right', maxWidth: '62%' }}>
-                Facial manipulation (face-swaps / reenactments). Not validated for full-scene AI/diffusion generation.
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -745,12 +914,25 @@ export const AnalysisResultsPage: React.FC<AnalysisResultsPageProps> = ({ analys
           </div>
 
           <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* Model Telemetry */}
+            {/* Whole-Image AI Generation Detection FIRST */}
             <div style={{ padding: '8px 12px', backgroundColor: 'var(--bg-app)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Model Prediction</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: isNoFace ? '#94a3b8' : isCurrentManipulated ? '#f87171' : '#34d399', marginTop: 2 }}>
-                  {isNoFace ? 'NO FACE DETECTED' : `${displayedPrediction} (${displayedScore}%)`}
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Whole-Image AI Detection (Smaug)</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: aiGen?.predictedLabel === 'likely_ai_generated' ? '#f87171' : aiGen?.predictedLabel === 'likely_camera_captured' ? '#34d399' : 'var(--text-muted)', marginTop: 2 }}>
+                  {aiGen?.status === 'completed'
+                    ? `${aiGenAssessment} (${aiGenScorePercent !== undefined ? aiGenScorePercent + '%' : 'N/A'})`
+                    : (aiGen?.status === 'error' ? 'Analysis Error' : 'Not Evaluated')}
+                </div>
+              </div>
+              <span className="badge badge-neutral" style={{ fontSize: '9px' }}>Smaug 439M</span>
+            </div>
+
+            {/* Facial Manipulation (Xception) SECOND */}
+            <div style={{ padding: '8px 12px', backgroundColor: 'var(--bg-app)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Facial Manipulation (Xception)</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: isNoFace ? '#94a3b8' : isBorderlineFace ? '#fbbf24' : isCurrentManipulated ? '#f87171' : '#34d399', marginTop: 2 }}>
+                  {isNoFace ? 'NO FACE DETECTED' : isBorderlineFace ? `INCONCLUSIVE (${displayedScore}%)` : `${displayedPrediction} (${displayedScore}%)`}
                 </div>
               </div>
               <span className="badge badge-neutral" style={{ fontSize: '9px' }}>Xception CNN</span>

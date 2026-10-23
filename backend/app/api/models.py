@@ -114,5 +114,28 @@ async def get_detection_models():
         )
     ]
 
-    return [live_xception, live_meso4, *planned_models]
+    # Live Whole-Image Model: Smaug AI Image Detector (Abacus.AI)
+    from ..services.detectors.ai_generated_image_detector import LOCAL_WEIGHTS_DIR
+    smaug_available = (LOCAL_WEIGHTS_DIR / "config.json").exists()
+    smaug_status = "Ready" if smaug_available else "Available"
+
+    live_smaug = ModelInfoResponse(
+        id="smaug-ai-detector",
+        name="Smaug AI Image Detector",
+        category="Vision Transformer (EmbeddingGemma-2)",
+        purpose="Whole-image synthetic / generative image identification across all visual categories",
+        status=smaug_status,
+        parameters="439M",
+        inputResolution="576x528 (528x528 native crops)",
+        description="Open-source vision-only EmbeddingGemma-2 fine-tune (Abacus.AI, Apache 2.0). Detects full-scene AI-generated images (Midjourney, FLUX, DALL-E, SD, StyleGAN) without requiring faces.",
+        accuracyMetric="OpenFake Benchmark SOTA (93.4% AUC)",
+        architecture="EmbeddingGemma-2 Vision (Abacus.AI)",
+        checkpoint="model.safetensors",
+        device=device_str,
+        mean=[0.5, 0.5, 0.5],
+        std=[0.5, 0.5, 0.5],
+        numClasses=2
+    )
+
+    return [live_xception, live_smaug, live_meso4, *planned_models]
 

@@ -10,6 +10,7 @@ import shutil
 import time
 from pathlib import Path
 from typing import List, Optional, Dict, Any
+import cv2
 
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException, status, Body
 from pydantic import BaseModel
@@ -306,7 +307,8 @@ async def compare_benchmark_models(request: MultiModelBenchmarkRequest):
         # Detect face once per sample
         det_info = detect_and_crop_faces(target_file)
         has_face = det_info.get("count", 0) > 0 and len(det_info.get("crops", [])) > 0
-        crop = det_info["crops"][0] if has_face else None
+        crop_bgr = det_info["crops"][0] if has_face else None
+        crop_rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB) if (has_face and crop_bgr is not None) else None
 
         for mid in model_ids:
             det = registry.get_detector(mid)
@@ -314,7 +316,7 @@ async def compare_benchmark_models(request: MultiModelBenchmarkRequest):
                 continue
 
             t = thresholds.get(mid, det.default_threshold)
-            if not has_face or crop is None:
+            if not has_face or crop_rgb is None:
                 model_eval_results[mid].append(
                     SampleEvaluationResult(
                         sample_id=s.sample_id,
@@ -332,7 +334,7 @@ async def compare_benchmark_models(request: MultiModelBenchmarkRequest):
                     )
                 )
             else:
-                pred = det.predict_face_crop(crop, threshold=t)
+                pred = det.predict_face_crop(crop_rgb, threshold=t)
                 is_correct = (pred.prediction == s.ground_truth.lower().strip())
                 model_eval_results[mid].append(
                     SampleEvaluationResult(

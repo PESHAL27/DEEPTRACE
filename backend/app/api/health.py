@@ -3,6 +3,7 @@ import torch
 from fastapi import APIRouter, Response, status
 from ..models.schemas import HealthResponse, StatusResponse, ModelReadinessInfo, StorageReadinessInfo
 from ..config import (
+    BACKEND_DIR,
     XCEPTION_WEIGHTS_PATH,
     XCEPTION_CONFIG_PATH,
     MESO4_WEIGHTS_PATH,
@@ -55,7 +56,8 @@ async def readiness_check(response: Response):
         models=ModelReadinessInfo(
             xception_primary="ready" if xception_ready else "missing_checkpoint",
             meso4_comparison="ready" if meso4_ready else "missing_checkpoint",
-            yunet_face_detector="ready" if yunet_ready else "missing_model"
+            yunet_face_detector="ready" if yunet_ready else "missing_model",
+            smaug_ai_detector="ready" if (BACKEND_DIR / "weights" / "smaug" / "config.json").exists() else "available"
         ),
         storage=StorageReadinessInfo(
             uploads="writable" if uploads_writable else "unwritable",

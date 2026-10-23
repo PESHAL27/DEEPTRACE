@@ -1,0 +1,138 @@
+[
+  {
+    "id": "real_cam_01",
+    "name": "Nithin_portrait.jpeg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\uploads\\DT-2026-17022339_Nithin_sist_friend.jpeg",
+    "category": "genuine_portrait",
+    "generator": "camera_smartphone",
+    "ground_truth": "real"
+  },
+  {
+    "id": "real_cam_02",
+    "name": "MY_PHOTO.jpeg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\uploads\\DT-2026-16692338_MY_PHOTO.jpeg",
+    "category": "genuine_portrait",
+    "generator": "camera_smartphone",
+    "ground_truth": "real"
+  },
+  {
+    "id": "real_cam_03",
+    "name": "real_landscape_yosemite.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_whole_image\\real_landscape_yosemite.jpg",
+    "category": "genuine_landscape",
+    "generator": "camera_dslr_canon5d",
+    "ground_truth": "real"
+  },
+  {
+    "id": "real_cam_04",
+    "name": "real_product_coffee.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_whole_image\\real_product_coffee.jpg",
+    "category": "genuine_product",
+    "generator": "camera_dslr",
+    "ground_truth": "real"
+  },
+  {
+    "id": "real_cam_05",
+    "name": "real_artwork_monalisa.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_whole_image\\real_artwork_monalisa.jpg",
+    "category": "genuine_artwork",
+    "generator": "traditional_painting",
+    "ground_truth": "real"
+  },
+  {
+    "id": "real_cam_06",
+    "name": "no_face_field.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\public\\assets\\no_face.jpg",
+    "category": "genuine_landscape",
+    "generator": "camera_nature",
+    "ground_truth": "real"
+  },
+  {
+    "id": "ai_port_01",
+    "name": "user_ai_generated.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_faces\\user_ai_generated.jpg",
+    "category": "ai_portrait",
+    "generator": "midjourney",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "ai_port_02",
+    "name": "stylegan_woman.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_faces\\stylegan_woman.jpg",
+    "category": "ai_portrait",
+    "generator": "stylegan",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "ai_port_03",
+    "name": "stylegan_boy.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_faces\\stylegan_boy.jpg",
+    "category": "ai_portrait",
+    "generator": "stylegan",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "ai_port_04",
+    "name": "stable_diffusion_portrait.webp",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_faces\\stable_diffusion_portrait.webp",
+    "category": "ai_portrait",
+    "generator": "stable_diffusion",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "ai_land_01",
+    "name": "ai_landscape_valley_sd15.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_whole_image\\ai_landscape_valley_sd15.jpg",
+    "category": "ai_landscape",
+    "generator": "stable_diffusion_1.5",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "ai_land_02",
+    "name": "ai_landscape_mountains.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_whole_image\\ai_landscape_mountains.jpg",
+    "category": "ai_landscape",
+    "generator": "stable_diffusion",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "ai_prod_01",
+    "name": "ai_product_vehicle.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_whole_image\\ai_product_vehicle.jpg",
+    "category": "ai_product",
+    "generator": "stable_diffusion",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "ai_arch_01",
+    "name": "ai_architecture_city.png",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_whole_image\\ai_architecture_city.png",
+    "category": "ai_architecture",
+    "generator": "stable_diffusion",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "ai_art_01",
+    "name": "ai_artwork_scifi.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\backend\\test_fixtures\\ai_whole_image\\ai_artwork_scifi.jpg",
+    "category": "ai_artwork",
+    "generator": "stable_diffusion",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "swap_01",
+    "name": "known_fake.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\deepfake_model\\tests\\samples\\known_fake.jpg",
+    "category": "face_swap_manipulated",
+    "generator": "faceforensics_splicing",
+    "ground_truth": "ai_generated"
+  },
+  {
+    "id": "swap_02",
+    "name": "all_in_one.jpg",
+    "path": "C:\\Users\\pecul\\Desktop\\Peshal\\college\\Hackathon\\DEEPTRACE\\deepfake_model\\DeepfakeBench\\training\\dataset\\library\\all_in_one.jpg",
+    "category": "face_swap_manipulated",
+    "generator": "deepfakebench_faceswap",
+    "ground_truth": "ai_generated"
+  }
+]

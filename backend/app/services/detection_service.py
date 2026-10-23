@@ -232,6 +232,10 @@ def analyze_image(
     if detection_info is None:
         detection_info = detect_and_crop_faces(image_path)
 
+    # Whole-image AI-generation detection (runs on full image regardless of facial presence)
+    from .detectors.ai_generated_image_detector import detect_ai_generated_image
+    ai_gen_res = detect_ai_generated_image(image_path)
+
     # 2. Check if no face is detected
     if detection_info["count"] == 0:
         logger.info(f"No faces detected in {image_path.name}; returning no_face_detected.")
@@ -254,7 +258,9 @@ def analyze_image(
             model_probability=None,
             assessment="No face detected",
             faces=[],
-            frequency_analysis=freq_res
+            frequency_analysis=freq_res,
+            ai_generation=ai_gen_res,
+            face_manipulation=None
         )
 
     # 3. Analyze each detected face crop independently
@@ -394,6 +400,17 @@ def analyze_image(
         f"All-Faces Mean Fake Prob={mean_fake_p:.4f}."
     )
 
+    face_manip_info = {
+        "prediction": overall_pred,
+        "probability": round(overall_prob, 4),
+        "real_probability": image_real_prob,
+        "fake_probability": image_fake_prob,
+        "assessment": assessment,
+        "model_name": "Xception",
+        "primary_face_result": primary_face_result.model_dump() if primary_face_result else None,
+        "all_faces_result": all_faces_result.model_dump() if all_faces_result else None
+    }
+
     return DetectionResult(
         status="completed",
         model=ModelDetails(name="Xception", source="DeepfakeBench"),
@@ -416,7 +433,9 @@ def analyze_image(
         gradcam_heatmap_url=primary_face.gradcam_heatmap_url,
         gradcam_overlay_url=primary_face.gradcam_overlay_url,
         original_face_crop_url=primary_face.original_face_crop_url,
-        frequency_analysis=freq_res
+        frequency_analysis=freq_res,
+        ai_generation=ai_gen_res,
+        face_manipulation=face_manip_info
     )
 
 

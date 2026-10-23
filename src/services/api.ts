@@ -9,7 +9,8 @@ import type {
   ImageCrossValidationData,
   VideoCrossValidationData,
   MultiModelBenchmarkComparisonData,
-  DetailedForensicReportData
+  DetailedForensicReportData,
+  AIGenerationData
 } from '../types/forensics';
 
 // Configurable backend and media URLs for development and production deployments
@@ -76,7 +77,7 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
       area: f.area,
       relativeArea: f.relative_area,
       isPrimary: f.is_primary,
-      label: `Face #${f.face_index + 1}: ${fPred} (${fProb}%)`,
+      label: `Face #${f.face_index + 1}`,
       prediction: f.prediction,
       probability: f.probability,
       realProbability: f.real_probability,
@@ -142,7 +143,7 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
         top: +((bbox.y / imgH) * 100).toFixed(2),
         width: +((bbox.width / imgW) * 100).toFixed(2),
         height: +((bbox.height / imgH) * 100).toFixed(2),
-        label: `Frame #${f.frame_number}: FAKE (${(fakeP * 100).toFixed(1)}%)`,
+        label: `Frame #${f.frame_number}`,
         prediction: 'fake',
         probability: fakeP
       } : undefined;
@@ -208,7 +209,7 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
     top: +((firstFaceFrame.bounding_box.y / imgH) * 100).toFixed(2),
     width: +((firstFaceFrame.bounding_box.width / imgW) * 100).toFixed(2),
     height: +((firstFaceFrame.bounding_box.height / imgH) * 100).toFixed(2),
-    label: `Frame #${firstFaceFrame.frame_number}: ${firstFaceFrame.prediction?.toUpperCase()} (${((firstFaceFrame.probability ?? 0) * 100).toFixed(1)}%)`,
+    label: `Frame #${firstFaceFrame.frame_number}`,
     prediction: firstFaceFrame.prediction,
     probability: firstFaceFrame.probability
   } : undefined;
@@ -253,6 +254,24 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
   } : undefined;
 
   const rawTemporal = data.temporal_analysis || data.detection?.temporal_analysis;
+
+  const rawAiGen = data.ai_generation || data.detection?.ai_generation;
+  const aiGeneration: AIGenerationData | undefined = rawAiGen ? {
+    modelName: rawAiGen.model_name || 'Smaug AI Image Detector',
+    modelId: rawAiGen.model_id || 'abacusai/Smaug-AI-Image-Detector',
+    score: typeof rawAiGen.score === 'number' ? rawAiGen.score : null,
+    predictedLabel: rawAiGen.predicted_label || null,
+    assessment: rawAiGen.assessment || 'Analysis unavailable',
+    confidence: typeof rawAiGen.confidence === 'number' ? rawAiGen.confidence : null,
+    threshold: rawAiGen.threshold ?? 0.50,
+    cropsEvaluated: rawAiGen.crops_evaluated ?? 1,
+    device: rawAiGen.device || 'cpu',
+    status: rawAiGen.status || 'completed',
+    errorMessage: rawAiGen.error_message || null,
+    executionTimeMs: rawAiGen.execution_time_ms || null
+  } : undefined;
+
+  const rawFaceManip = data.face_manipulation || data.detection?.face_manipulation;
 
   return {
     id: data.analysis_id,
@@ -316,7 +335,9 @@ function transformBackendAnalysis(data: any, fallbackPreviewUrl?: string): Analy
     fakeProbability: typeof data.fake_probability === 'number' ? data.fake_probability : (typeof data.detection?.fake_probability === 'number' ? data.detection.fake_probability : undefined),
     metadataAnalysis: metadataAnalysis,
     frequencyAnalysis: frequencyAnalysis,
-    temporalAnalysis: rawTemporal || undefined
+    temporalAnalysis: rawTemporal || undefined,
+    aiGeneration: aiGeneration,
+    faceManipulation: rawFaceManip
   };
 }
 

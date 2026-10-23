@@ -11,6 +11,7 @@ class ModelReadinessInfo(BaseModel):
     xception_primary: str
     meso4_comparison: str
     yunet_face_detector: str
+    smaug_ai_detector: Optional[str] = "ready"
 
 class StorageReadinessInfo(BaseModel):
     uploads: str
@@ -153,6 +154,20 @@ class VideoFrameAnalysisItem(BaseModel):
     frequency_analysis: Optional[FrequencyAnalysisResult] = None
     frequency_spectrum_url: Optional[str] = None
 
+class AIGenerationResult(BaseModel):
+    model_name: str = "Smaug AI Image Detector"
+    model_id: str = "abacusai/Smaug-AI-Image-Detector"
+    score: Optional[float] = Field(default=None, description="Raw model probability score [0.0 - 1.0] that image is AI-generated")
+    predicted_label: Optional[str] = Field(default=None, description="Classification verdict: likely_ai_generated, likely_camera_captured, or inconclusive")
+    assessment: str = Field(default="Analysis unavailable", description="Human-readable assessment string")
+    confidence: Optional[float] = Field(default=None, description="Confidence in predicted label [0.0 - 1.0]")
+    threshold: float = Field(default=0.50, description="Decision threshold applied to the raw score")
+    crops_evaluated: int = Field(default=1, description="Number of crop views evaluated (1 or 3)")
+    device: Optional[str] = Field(default="cpu", description="Execution device (cpu or cuda)")
+    status: str = Field(default="completed", description="Execution status: completed, error, or unavailable")
+    error_message: Optional[str] = None
+    execution_time_ms: Optional[float] = None
+
 class DetectionResult(BaseModel):
     status: str = Field(
         default="model_not_loaded", 
@@ -187,6 +202,8 @@ class DetectionResult(BaseModel):
     metadata_analysis: Optional[MetadataAnalysisResult] = None
     frequency_analysis: Optional[FrequencyAnalysisResult] = None
     temporal_analysis: Optional[TemporalAnalysisResult] = None
+    ai_generation: Optional[AIGenerationResult] = None
+    face_manipulation: Optional[Dict[str, Any]] = None
 
 class AnalysisResponse(BaseModel):
     analysis_id: str
@@ -218,6 +235,8 @@ class AnalysisResponse(BaseModel):
     margin_note: Optional[str] = None
     task_scope_note: Optional[str] = None
     frame_results: Optional[List[VideoFrameAnalysisItem]] = None
+    ai_generation: Optional[AIGenerationResult] = None
+    face_manipulation: Optional[Dict[str, Any]] = None
     frames_analyzed: Optional[int] = None
     duration: Optional[float] = None
     fps: Optional[float] = None

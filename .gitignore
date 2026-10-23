@@ -68,9 +68,20 @@ scratch/
 backend/evaluation/temp_crop*
 backend/evaluation/temp_crops/
 
+# Model weights & large binaries (exceeds GitHub 100MB limit)
+backend/weights/
+backend/app/weights/
+*.safetensors
+*.bin
+*.pth
+*.pt
+*.onnx
+.cache/
+
 # Environment & Secrets
 .env
 .env.*
 !.env.example
+
 
 

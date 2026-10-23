@@ -174,6 +174,23 @@ export interface Analysis {
   rawFile?: File;
   crossValidation?: ImageCrossValidationData | VideoCrossValidationData;
   temporalAnalysis?: TemporalAnalysisResultData;
+  aiGeneration?: AIGenerationData;
+  faceManipulation?: Record<string, any>;
+}
+
+export interface AIGenerationData {
+  modelName: string;
+  modelId: string;
+  score?: number | null;
+  predictedLabel?: 'likely_ai_generated' | 'likely_camera_captured' | 'inconclusive' | null;
+  assessment: string;
+  confidence?: number | null;
+  threshold: number;
+  cropsEvaluated?: number;
+  device?: string;
+  status: 'completed' | 'error' | 'unavailable';
+  errorMessage?: string | null;
+  executionTimeMs?: number | null;
 }
 
 export interface ModelInfo {

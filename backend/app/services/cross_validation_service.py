@@ -216,16 +216,16 @@ class CrossValidationService:
                 summary_message="No facial structures detected. Cross-validation bypassed."
             )
 
-        # 2. Extract largest detected face crop (RGB)
+        # 2. Extract largest detected face crop and convert to RGB (adhering to BaseDetector contract)
         primary_crop = det_info["crops"][0]
+        primary_crop_rgb = cv2.cvtColor(primary_crop, cv2.COLOR_BGR2RGB)
 
         # 3. Evaluate Primary Model (Xception)
         primary_thresh = thresholds.get(primary_det.model_id, primary_det.default_threshold)
-        primary_pred = primary_det.predict_face_crop(primary_crop, threshold=primary_thresh)
+        primary_pred = primary_det.predict_face_crop(primary_crop_rgb, threshold=primary_thresh)
 
-        # 4. Evaluate Comparison Models (Meso4) on IDENTICAL face crop (converted to RGB)
+        # 4. Evaluate Comparison Models (Meso4) on IDENTICAL face crop
         comp_predictions: List[NormalizedDetectorPrediction] = []
-        primary_crop_rgb = cv2.cvtColor(primary_crop, cv2.COLOR_BGR2RGB)
         for cd in comparison_detectors:
             cd_thresh = thresholds.get(cd.model_id, cd.default_threshold)
             try:
@@ -360,17 +360,17 @@ class CrossValidationService:
 
                 if has_face:
                     face_crop = det_info["crops"][0]
+                    face_crop_rgb = cv2.cvtColor(face_crop, cv2.COLOR_BGR2RGB)
 
-                    # 1. Primary prediction on frame crop
+                    # 1. Primary prediction on frame crop (RGB)
                     p_thresh = thresholds.get(primary_det.model_id, primary_det.default_threshold)
-                    p_pred = primary_det.predict_face_crop(face_crop, threshold=p_thresh)
+                    p_pred = primary_det.predict_face_crop(face_crop_rgb, threshold=p_thresh)
                     if p_pred.prediction == "manipulated":
                         primary_manip_frames += 1
 
-                    # 2. Comparison predictions on IDENTICAL frame crop (converted to RGB)
+                    # 2. Comparison predictions on IDENTICAL frame crop (RGB)
                     c_preds = []
                     frame_agree = True
-                    face_crop_rgb = cv2.cvtColor(face_crop, cv2.COLOR_BGR2RGB)
                     for cd in comparison_detectors:
                         c_thresh = thresholds.get(cd.model_id, cd.default_threshold)
                         try:

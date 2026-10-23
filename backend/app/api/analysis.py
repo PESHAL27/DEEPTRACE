@@ -248,6 +248,8 @@ async def analyze_media(file: UploadFile = File(...)):
         metadata_analysis=metadata_analysis,
         frequency_analysis=detection_result.frequency_analysis,
         temporal_analysis=detection_result.temporal_analysis,
+        ai_generation=detection_result.ai_generation,
+        face_manipulation=detection_result.face_manipulation,
         created_at=created_at
     )
 

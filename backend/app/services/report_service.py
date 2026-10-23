@@ -473,6 +473,23 @@ class ForensicReportService:
             )
         ]
 
+        if getattr(record, "ai_generation", None):
+            ai_gen = record.ai_generation
+            ai_score_str = f"{ai_gen.score:.4f} ({(ai_gen.score * 100):.1f}%)" if ai_gen.score is not None else "N/A"
+            summary_categories.append(
+                EvidenceSummaryCategory(
+                    category="WHOLE-IMAGE AI GENERATION",
+                    status="COMPLETED" if ai_gen.status == "completed" else "UNAVAILABLE",
+                    headline=f"Smaug AI Image Detector: {ai_gen.assessment}",
+                    details=(
+                        f"Whole-image synthetic likelihood score: {ai_score_str}. "
+                        f"Assessment: '{ai_gen.assessment}'. Evaluated across {ai_gen.crops_evaluated} view(s). "
+                        f"Supports non-facial images (landscapes, products, artwork) and AI portraits."
+                    ),
+                    supporting_artifacts=["Smaug-AI-Image-Detector"]
+                )
+            )
+
         if record.media_type == "video":
             if video_summary:
                 summary_categories.append(

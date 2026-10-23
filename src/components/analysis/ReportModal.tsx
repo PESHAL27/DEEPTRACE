@@ -231,6 +231,50 @@ export const ReportModal: React.FC<ReportModalProps> = ({ analysis, isOpen, onCl
             </span>
           </div>
 
+          {/* Whole-Image AI Detection Finding (Smaug AI Detector) */}
+          {analysis.aiGeneration && (
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-sm)',
+                border: `1px solid ${
+                  analysis.aiGeneration.predictedLabel === 'likely_ai_generated'
+                    ? 'var(--status-red-border)'
+                    : 'var(--status-green-border)'
+                }`,
+                backgroundColor:
+                  analysis.aiGeneration.predictedLabel === 'likely_ai_generated'
+                    ? 'var(--status-red-subtle)'
+                    : 'var(--status-green-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Zap size={22} color={analysis.aiGeneration.predictedLabel === 'likely_ai_generated' ? '#f87171' : '#34d399'} />
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: analysis.aiGeneration.predictedLabel === 'likely_ai_generated' ? '#f87171' : '#34d399' }}>
+                    WHOLE-IMAGE AI DETECTION: {analysis.aiGeneration.assessment.toUpperCase()} {typeof analysis.aiGeneration.score === 'number' ? `(${(analysis.aiGeneration.score * 100).toFixed(1)}% LIKELIHOOD)` : ''}
+                  </div>
+                  <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                    Evaluated with {analysis.aiGeneration.modelName} (Abacus.AI, Apache 2.0). Operates on complete image without facial bounding box dependency.
+                  </div>
+                </div>
+              </div>
+              <span
+                className={`badge ${
+                  analysis.aiGeneration.predictedLabel === 'likely_ai_generated'
+                    ? 'badge-manipulated'
+                    : 'badge-real'
+                }`}
+                style={{ fontSize: '9.5px', padding: '3px 8px' }}
+              >
+                {typeof analysis.aiGeneration.score === 'number' ? `Score: ${(analysis.aiGeneration.score * 100).toFixed(1)}%` : 'Unavailable'}
+              </span>
+            </div>
+          )}
+
           {/* SHA-256 Cryptographic Digest Bar */}
           <div style={{
             padding: '8px 12px',

@@ -60,8 +60,8 @@ class XceptionAdapter(BaseDetector):
             if not self.is_loaded():
                 self.load()
 
-            # Execute production predict_face_crop (returns dict)
-            res = predict_face_crop(face_rgb, threshold=t)
+            # Execute production predict_face_crop (face_rgb is already RGB)
+            res = predict_face_crop(face_rgb, threshold=t, is_bgr=False)
             elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
             manipulated_prob = res.get("fake_probability", 0.0)
